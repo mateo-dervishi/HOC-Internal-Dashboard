@@ -7,7 +7,7 @@ const Layout = () => {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo">House of Clarence</div>
-          <div className="sidebar-tagline">Internal Dashboard</div>
+          <div className="sidebar-tagline">Internal Operations</div>
         </div>
         
         <nav className="sidebar-nav">

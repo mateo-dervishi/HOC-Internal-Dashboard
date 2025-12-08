@@ -169,7 +169,7 @@ const NetProfit = () => {
                       <tr key={project.id}>
                         <td>
                           <Link to={`/projects/${project.id}`} style={{ 
-                            color: 'var(--color-espresso)', 
+                            color: 'var(--color-black)', 
                             fontWeight: 600,
                             textDecoration: 'none'
                           }}>
@@ -193,7 +193,7 @@ const NetProfit = () => {
                     ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ background: 'var(--color-warm-white)' }}>
+                  <tr style={{ background: 'var(--color-light-gray)' }}>
                     <td colSpan={2}><strong>Total</strong></td>
                     <td style={{ color: 'var(--color-success)', fontWeight: 600 }}>
                       {formatCurrency(totalInflows)}
@@ -213,8 +213,8 @@ const NetProfit = () => {
             </div>
           ) : (
             <div className="card-body">
-              <p style={{ color: 'var(--color-stone)', textAlign: 'center', padding: '2rem' }}>
-                No projects yet. <Link to="/projects" style={{ color: 'var(--color-camel)' }}>Add your first project</Link>
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>
+                No projects yet. <Link to="/projects" style={{ color: 'var(--color-black)' }}>Add your first project</Link>
               </p>
             </div>
           )}
@@ -231,7 +231,7 @@ const NetProfit = () => {
           
           {/* Cost by Category Summary */}
           {Object.keys(costsByCategory).length > 0 && (
-            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-champagne)' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-border)' }}>
               <div className="stat-label" style={{ marginBottom: '1rem' }}>By Category</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                 {Object.entries(costsByCategory)
@@ -240,14 +240,14 @@ const NetProfit = () => {
                     <div 
                       key={category}
                       style={{
-                        background: 'var(--color-warm-white)',
+                        background: 'var(--color-light-gray)',
                         padding: '0.5rem 1rem',
                         borderRadius: 'var(--radius-md)',
                         fontSize: '0.85rem',
                       }}
                     >
-                      <span style={{ color: 'var(--color-stone)' }}>{category}:</span>{' '}
-                      <span style={{ fontWeight: 600, color: 'var(--color-espresso)' }}>
+                      <span style={{ color: 'var(--color-text-muted)' }}>{category}:</span>{' '}
+                      <span style={{ fontWeight: 600, color: 'var(--color-black)' }}>
                         {formatCurrency(amount)}
                       </span>
                     </div>
@@ -275,7 +275,7 @@ const NetProfit = () => {
                       <tr key={cost.id}>
                         <td>{formatDate(cost.date)}</td>
                         <td>{cost.category}</td>
-                        <td style={{ color: 'var(--color-stone)' }}>{cost.description || '-'}</td>
+                        <td style={{ color: 'var(--color-text-muted)' }}>{cost.description || '-'}</td>
                         <td style={{ fontWeight: 600, color: 'var(--color-error)' }}>
                           -{formatCurrency(cost.amount)}
                         </td>
@@ -292,7 +292,7 @@ const NetProfit = () => {
                     ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ background: 'var(--color-warm-white)' }}>
+                  <tr style={{ background: 'var(--color-light-gray)' }}>
                     <td colSpan={3}><strong>Total Operational Costs</strong></td>
                     <td style={{ fontWeight: 700, color: 'var(--color-error)' }}>
                       -{formatCurrency(totalOperationalCosts)}
@@ -304,7 +304,7 @@ const NetProfit = () => {
             </div>
           ) : (
             <div className="card-body">
-              <p style={{ color: 'var(--color-stone)', textAlign: 'center', padding: '2rem' }}>
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>
                 No operational costs recorded yet
               </p>
             </div>
@@ -322,11 +322,11 @@ const NetProfit = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem', textAlign: 'center' }}>
             <div>
               <div className="stat-label">Gross Profit</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-espresso)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-black)' }}>
                 {formatCurrency(totalGrossProfit)}
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: 'var(--color-stone)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: 'var(--color-text-muted)' }}>
               −
             </div>
             <div>

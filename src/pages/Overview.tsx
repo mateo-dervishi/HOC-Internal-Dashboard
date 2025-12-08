@@ -40,8 +40,8 @@ const Overview = () => {
   return (
     <div>
       <header className="page-header">
-        <h1 className="page-title">Dashboard Overview</h1>
-        <p className="page-subtitle">Welcome back to House of Clarence</p>
+        <h1 className="page-title">Overview</h1>
+        <p className="page-subtitle">Financial Performance Summary</p>
       </header>
       
       <div className="stat-grid">
@@ -95,19 +95,19 @@ const Overview = () => {
             <div style={{ display: 'flex', gap: '2rem' }}>
               <div>
                 <div className="stat-label">Active</div>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-success)' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-success)', fontFamily: 'Cormorant Garamond, serif' }}>
                   {activeProjects}
                 </div>
               </div>
               <div>
                 <div className="stat-label">Completed</div>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-slate)' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-text)', fontFamily: 'Cormorant Garamond, serif' }}>
                   {completedProjects}
                 </div>
               </div>
               <div>
                 <div className="stat-label">On Hold</div>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-warning)' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-warning)', fontFamily: 'Cormorant Garamond, serif' }}>
                   {state.projects.filter(p => p.status === 'on_hold').length}
                 </div>
               </div>
@@ -178,8 +178,8 @@ const Overview = () => {
                     <tr key={project.id}>
                       <td>
                         <Link to={`/projects/${project.id}`} style={{ 
-                          color: 'var(--color-espresso)', 
-                          fontWeight: 600,
+                          color: 'var(--color-black)', 
+                          fontWeight: 500,
                           textDecoration: 'none'
                         }}>
                           {project.code}

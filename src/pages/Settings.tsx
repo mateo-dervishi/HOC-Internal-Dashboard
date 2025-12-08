@@ -72,14 +72,14 @@ const Settings = () => {
               justifyContent: 'space-between', 
               alignItems: 'center',
               padding: '1.5rem',
-              background: 'var(--color-warm-white)',
+              background: 'var(--color-light-gray)',
               borderRadius: 'var(--radius-md)'
             }}>
               <div>
                 <h4 style={{ marginBottom: '0.25rem', fontFamily: 'inherit', fontWeight: 600 }}>
                   Export Data
                 </h4>
-                <p style={{ color: 'var(--color-stone)', fontSize: '0.9rem', margin: 0 }}>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>
                   Download a backup of all your projects and operational costs
                 </p>
               </div>
@@ -95,14 +95,14 @@ const Settings = () => {
               justifyContent: 'space-between', 
               alignItems: 'center',
               padding: '1.5rem',
-              background: 'var(--color-warm-white)',
+              background: 'var(--color-light-gray)',
               borderRadius: 'var(--radius-md)'
             }}>
               <div>
                 <h4 style={{ marginBottom: '0.25rem', fontFamily: 'inherit', fontWeight: 600 }}>
                   Import Data
                 </h4>
-                <p style={{ color: 'var(--color-stone)', fontSize: '0.9rem', margin: 0 }}>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>
                   Restore data from a previous backup file
                 </p>
               </div>
@@ -124,7 +124,7 @@ const Settings = () => {
               justifyContent: 'space-between', 
               alignItems: 'center',
               padding: '1.5rem',
-              background: 'rgba(139, 58, 58, 0.05)',
+              background: 'var(--color-error-light)',
               borderRadius: 'var(--radius-md)',
               border: '1px solid rgba(139, 58, 58, 0.2)'
             }}>
@@ -133,7 +133,7 @@ const Settings = () => {
                   <AlertTriangle size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
                   Clear All Data
                 </h4>
-                <p style={{ color: 'var(--color-stone)', fontSize: '0.9rem', margin: 0 }}>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>
                   Permanently delete all projects and operational costs
                 </p>
               </div>
@@ -154,34 +154,34 @@ const Settings = () => {
         <div className="card-body">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
             <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-espresso)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
                 {state.projects.length}
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-stone)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '2px' }}>
                 Projects
               </div>
             </div>
             <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-espresso)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
                 {state.projects.reduce((sum, p) => sum + p.payments.length, 0)}
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-stone)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '2px' }}>
                 Payments
               </div>
             </div>
             <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-espresso)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
                 {state.projects.reduce((sum, p) => sum + p.supplierCosts.length, 0)}
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-stone)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '2px' }}>
                 Supplier Costs
               </div>
             </div>
             <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-espresso)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
                 {state.operationalCosts.length}
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-stone)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '2px' }}>
                 Op. Costs
               </div>
             </div>
@@ -195,18 +195,19 @@ const Settings = () => {
           <h3 className="card-title">About</h3>
         </div>
         <div className="card-body">
-          <p style={{ marginBottom: '1rem' }}>
-            <strong>House of Clarence Internal Dashboard</strong>
+          <p style={{ marginBottom: '1rem', fontFamily: 'Cormorant Garamond, serif', fontSize: '1.25rem' }}>
+            <strong>House of Clarence</strong>
           </p>
-          <p style={{ color: 'var(--color-stone)', marginBottom: '1rem' }}>
-            A financial management tool for tracking project profitability, client payments, 
-            supplier costs, and operational expenses.
+          <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+            Internal financial management for tracking project profitability, client payments, 
+            supplier costs, and operational expenses. Refined finishing for discerning spaces.
           </p>
           <div style={{ 
-            background: 'var(--color-warm-white)', 
-            padding: '1rem', 
+            background: 'var(--color-light-gray)', 
+            padding: '1.25rem', 
             borderRadius: 'var(--radius-md)',
-            fontSize: '0.9rem'
+            fontSize: '0.85rem',
+            lineHeight: '1.8'
           }}>
             <strong>Payment Terms:</strong> 20/70/10 (Upfront / Before Production / On Delivery)
             <br />
@@ -219,4 +220,3 @@ const Settings = () => {
 };
 
 export default Settings;
-

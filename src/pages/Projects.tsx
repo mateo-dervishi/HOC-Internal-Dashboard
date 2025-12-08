@@ -92,7 +92,7 @@ const Projects = () => {
               left: '1rem', 
               top: '50%', 
               transform: 'translateY(-50%)',
-              color: 'var(--color-stone)'
+              color: 'var(--color-text-muted)'
             }} />
             <input
               type="text"
@@ -162,7 +162,7 @@ const Projects = () => {
                       </span>
                     </div>
                     <div style={{ marginTop: '1rem' }}>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--color-stone)', marginBottom: '0.5rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
                         Collection: {Math.round(collectionRate)}%
                       </div>
                       <div className="progress-bar">
@@ -271,7 +271,7 @@ const Projects = () => {
                           {formatCurrency(expectedPayments.upfront.account + expectedPayments.upfront.cash)}
                         </div>
                         {newProject.paymentType === 'cash_payment' && (
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-stone)', marginTop: '0.5rem' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
                             Account: {formatCurrency(expectedPayments.upfront.account)}<br/>
                             Cash: {formatCurrency(expectedPayments.upfront.cash)}
                           </div>
@@ -284,7 +284,7 @@ const Projects = () => {
                           {formatCurrency(expectedPayments.production.account + expectedPayments.production.cash)}
                         </div>
                         {newProject.paymentType === 'cash_payment' && (
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-stone)', marginTop: '0.5rem' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
                             Account: {formatCurrency(expectedPayments.production.account)}<br/>
                             Cash: {formatCurrency(expectedPayments.production.cash)}
                           </div>
@@ -297,7 +297,7 @@ const Projects = () => {
                           {formatCurrency(expectedPayments.delivery.account + expectedPayments.delivery.cash)}
                         </div>
                         {newProject.paymentType === 'cash_payment' && (
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-stone)', marginTop: '0.5rem' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
                             Account: {formatCurrency(expectedPayments.delivery.account)}<br/>
                             Cash: {formatCurrency(expectedPayments.delivery.cash)}
                           </div>

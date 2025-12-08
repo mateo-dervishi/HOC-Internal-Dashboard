@@ -356,14 +356,14 @@ const ProjectDetail = () => {
             <div style={{ 
               marginTop: '1.5rem', 
               padding: '1rem', 
-              background: 'var(--color-warm-white)', 
+              background: 'var(--color-light-gray)', 
               borderRadius: 'var(--radius-md)',
               display: 'flex',
               gap: '2rem'
             }}>
               <div>
                 <div className="stat-label">Account Payments</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-espresso)' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-black)' }}>
                   {formatCurrency(financials.accountPayments)}
                 </div>
               </div>
@@ -430,7 +430,7 @@ const ProjectDetail = () => {
             </div>
           ) : (
             <div className="card-body">
-              <p style={{ color: 'var(--color-stone)', textAlign: 'center', padding: '1rem' }}>
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>
                 No payments recorded yet
               </p>
             </div>
@@ -482,7 +482,7 @@ const ProjectDetail = () => {
             </div>
           ) : (
             <div className="card-body">
-              <p style={{ color: 'var(--color-stone)', textAlign: 'center', padding: '1rem' }}>
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>
                 No supplier costs recorded yet
               </p>
             </div>
