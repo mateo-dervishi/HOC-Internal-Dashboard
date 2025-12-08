@@ -20,8 +20,8 @@ const NetProfit = () => {
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
       currency: 'GBP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
   
@@ -45,6 +45,8 @@ const NetProfit = () => {
   const totalGrossProfit = projectProfits.reduce((sum, p) => sum + p.grossProfit, 0);
   const totalInflows = projectProfits.reduce((sum, p) => sum + p.totalInflows, 0);
   const totalSupplierCosts = projectProfits.reduce((sum, p) => sum + p.totalSupplierCosts, 0);
+  const totalAccountPayments = projectProfits.reduce((sum, p) => sum + p.accountPayments, 0);
+  const totalFeesPayments = projectProfits.reduce((sum, p) => sum + p.feesPayments, 0);
   const totalOperationalCosts = state.operationalCosts.reduce((sum, c) => sum + c.amount, 0);
   const netProfit = totalGrossProfit - totalOperationalCosts;
   
@@ -141,6 +143,33 @@ const NetProfit = () => {
         </div>
       </div>
       
+      {/* Payment Type Breakdown */}
+      <div className="card mb-4">
+        <div className="card-header">
+          <h3 className="card-title">Payment Type Breakdown</h3>
+        </div>
+        <div className="card-body" style={{ display: 'flex', gap: '3rem' }}>
+          <div>
+            <div className="stat-label">Account Payments (VATable)</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              {formatCurrency(totalAccountPayments)}
+            </div>
+          </div>
+          <div>
+            <div className="stat-label">Fees / Cash (Non-VAT)</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-success)', fontFamily: 'Cormorant Garamond, serif' }}>
+              {formatCurrency(totalFeesPayments)}
+            </div>
+          </div>
+          <div>
+            <div className="stat-label">Total Received</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              {formatCurrency(totalInflows)}
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
         {/* Project Profits Breakdown */}
         <div className="card">
@@ -170,7 +199,7 @@ const NetProfit = () => {
                         <td>
                           <Link to={`/projects/${project.id}`} style={{ 
                             color: 'var(--color-black)', 
-                            fontWeight: 600,
+                            fontWeight: 500,
                             textDecoration: 'none'
                           }}>
                             {project.code}
@@ -184,7 +213,7 @@ const NetProfit = () => {
                           {formatCurrency(project.totalSupplierCosts)}
                         </td>
                         <td style={{ 
-                          fontWeight: 600, 
+                          fontWeight: 500, 
                           color: project.grossProfit >= 0 ? 'var(--color-success)' : 'var(--color-error)'
                         }}>
                           {formatCurrency(project.grossProfit)}
@@ -195,14 +224,14 @@ const NetProfit = () => {
                 <tfoot>
                   <tr style={{ background: 'var(--color-light-gray)' }}>
                     <td colSpan={2}><strong>Total</strong></td>
-                    <td style={{ color: 'var(--color-success)', fontWeight: 600 }}>
+                    <td style={{ color: 'var(--color-success)', fontWeight: 500 }}>
                       {formatCurrency(totalInflows)}
                     </td>
-                    <td style={{ color: 'var(--color-error)', fontWeight: 600 }}>
+                    <td style={{ color: 'var(--color-error)', fontWeight: 500 }}>
                       {formatCurrency(totalSupplierCosts)}
                     </td>
                     <td style={{ 
-                      fontWeight: 700, 
+                      fontWeight: 600, 
                       color: totalGrossProfit >= 0 ? 'var(--color-success)' : 'var(--color-error)'
                     }}>
                       {formatCurrency(totalGrossProfit)}
@@ -247,7 +276,7 @@ const NetProfit = () => {
                       }}
                     >
                       <span style={{ color: 'var(--color-text-muted)' }}>{category}:</span>{' '}
-                      <span style={{ fontWeight: 600, color: 'var(--color-black)' }}>
+                      <span style={{ fontWeight: 500, color: 'var(--color-black)' }}>
                         {formatCurrency(amount)}
                       </span>
                     </div>
@@ -276,7 +305,7 @@ const NetProfit = () => {
                         <td>{formatDate(cost.date)}</td>
                         <td>{cost.category}</td>
                         <td style={{ color: 'var(--color-text-muted)' }}>{cost.description || '-'}</td>
-                        <td style={{ fontWeight: 600, color: 'var(--color-error)' }}>
+                        <td style={{ fontWeight: 500, color: 'var(--color-error)' }}>
                           -{formatCurrency(cost.amount)}
                         </td>
                         <td>
@@ -294,7 +323,7 @@ const NetProfit = () => {
                 <tfoot>
                   <tr style={{ background: 'var(--color-light-gray)' }}>
                     <td colSpan={3}><strong>Total Operational Costs</strong></td>
-                    <td style={{ fontWeight: 700, color: 'var(--color-error)' }}>
+                    <td style={{ fontWeight: 600, color: 'var(--color-error)' }}>
                       -{formatCurrency(totalOperationalCosts)}
                     </td>
                     <td></td>
@@ -316,13 +345,13 @@ const NetProfit = () => {
       <div className="card" style={{ marginTop: '1.5rem' }}>
         <div className="card-body" style={{ 
           background: netProfit >= 0 
-            ? 'linear-gradient(135deg, rgba(74, 122, 78, 0.1) 0%, rgba(143, 168, 139, 0.1) 100%)'
-            : 'linear-gradient(135deg, rgba(139, 58, 58, 0.1) 0%, rgba(196, 120, 90, 0.1) 100%)',
+            ? 'var(--color-success-light)'
+            : 'var(--color-error-light)',
         }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem', textAlign: 'center' }}>
             <div>
               <div className="stat-label">Gross Profit</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-black)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
                 {formatCurrency(totalGrossProfit)}
               </div>
             </div>
@@ -331,7 +360,7 @@ const NetProfit = () => {
             </div>
             <div>
               <div className="stat-label">Operational Costs</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-error)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-error)', fontFamily: 'Cormorant Garamond, serif' }}>
                 {formatCurrency(totalOperationalCosts)}
               </div>
             </div>
@@ -339,7 +368,8 @@ const NetProfit = () => {
               <div className="stat-label">Net Profit</div>
               <div style={{ 
                 fontSize: '1.75rem', 
-                fontWeight: 700, 
+                fontWeight: 400, 
+                fontFamily: 'Cormorant Garamond, serif',
                 color: netProfit >= 0 ? 'var(--color-success)' : 'var(--color-error)'
               }}>
                 {formatCurrency(netProfit)}
@@ -427,4 +457,3 @@ const NetProfit = () => {
 };
 
 export default NetProfit;
-

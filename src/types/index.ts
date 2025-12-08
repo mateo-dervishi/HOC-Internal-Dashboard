@@ -6,17 +6,12 @@ export interface PaymentTerms {
   delivery: number;     // 10%
 }
 
-export interface PaymentBreakdown {
-  account: number;      // 60% if CP, 100% if full account
-  cash: number;         // 40% if CP, 0% if full account
-}
-
 export interface Payment {
   id: string;
   date: string;
   amount: number;
   stage: 'upfront' | 'production' | 'delivery';
-  type: 'account' | 'cash';
+  type: 'account' | 'fees';  // 'fees' = cash (non-VATable)
   description?: string;
 }
 
@@ -26,13 +21,18 @@ export interface SupplierCost {
   amount: number;
   supplier: string;
   description?: string;
+  includesVat?: boolean;
 }
 
 export interface Project {
   id: string;
   code: string;           // e.g., "P39"
   clientName: string;     // e.g., "Lydia"
-  totalValue: number;     // Total project value
+  
+  // Project value breakdown
+  goodsTotal: number;     // Total value of goods/services (ex VAT)
+  feesTotal: number;      // Fees/Cash portion (non-VATable)
+  
   paymentType: PaymentType;
   payments: Payment[];
   supplierCosts: SupplierCost[];
@@ -54,67 +54,107 @@ export interface DashboardState {
   operationalCosts: OperationalCost[];
 }
 
-// Helper to calculate payment breakdown based on type
-export const calculatePaymentBreakdown = (
-  totalValue: number,
-  paymentType: PaymentType
-): { accountTotal: number; cashTotal: number } => {
-  if (paymentType === 'cash_payment') {
-    return {
-      accountTotal: totalValue * 0.6,
-      cashTotal: totalValue * 0.4,
-    };
-  }
+// VAT rate
+export const VAT_RATE = 0.20;
+
+// Helper to calculate total project value
+export const calculateProjectValue = (project: Project) => {
+  const vatOnGoods = project.goodsTotal * VAT_RATE;
+  const totalIncVat = project.goodsTotal + vatOnGoods + project.feesTotal;
+  
   return {
-    accountTotal: totalValue,
-    cashTotal: 0,
+    goodsTotal: project.goodsTotal,
+    feesTotal: project.feesTotal,       // Cash/Fees - non VATable
+    vatAmount: vatOnGoods,
+    totalExVat: project.goodsTotal + project.feesTotal,
+    totalIncVat,
   };
 };
 
 // Helper to calculate expected payments at each stage
+// Payment terms: 20/70/10
+// If cash payment (CP): 60% account, 40% fees (cash)
 export const calculateExpectedPayments = (
-  totalValue: number,
+  goodsTotal: number,
+  feesTotal: number,
   paymentType: PaymentType
 ): {
-  upfront: { account: number; cash: number };
-  production: { account: number; cash: number };
-  delivery: { account: number; cash: number };
+  upfront: { account: number; fees: number; accountVat: number };
+  production: { account: number; fees: number; accountVat: number };
+  delivery: { account: number; fees: number; accountVat: number };
+  totals: { account: number; fees: number; vat: number; total: number };
 } => {
-  const { accountTotal, cashTotal } = calculatePaymentBreakdown(totalValue, paymentType);
+  // Account portion gets VAT, Fees don't
+  const accountVat = goodsTotal * VAT_RATE;
+  const accountIncVat = goodsTotal + accountVat;
   
   return {
     upfront: {
-      account: accountTotal * 0.2,
-      cash: cashTotal * 0.2,
+      account: goodsTotal * 0.2,
+      fees: feesTotal * 0.2,
+      accountVat: accountVat * 0.2,
     },
     production: {
-      account: accountTotal * 0.7,
-      cash: cashTotal * 0.7,
+      account: goodsTotal * 0.7,
+      fees: feesTotal * 0.7,
+      accountVat: accountVat * 0.7,
     },
     delivery: {
-      account: accountTotal * 0.1,
-      cash: cashTotal * 0.1,
+      account: goodsTotal * 0.1,
+      fees: feesTotal * 0.1,
+      accountVat: accountVat * 0.1,
+    },
+    totals: {
+      account: accountIncVat,
+      fees: feesTotal,
+      vat: accountVat,
+      total: accountIncVat + feesTotal,
     },
   };
 };
 
 // Helper to calculate project financials
 export const calculateProjectFinancials = (project: Project) => {
-  const totalInflows = project.payments.reduce((sum, p) => sum + p.amount, 0);
+  const projectValue = calculateProjectValue(project);
+  
+  // Payments received
+  const accountPayments = project.payments
+    .filter(p => p.type === 'account')
+    .reduce((sum, p) => sum + p.amount, 0);
+  const feesPayments = project.payments
+    .filter(p => p.type === 'fees')
+    .reduce((sum, p) => sum + p.amount, 0);
+  const totalInflows = accountPayments + feesPayments;
+  
+  // Supplier costs
   const totalSupplierCosts = project.supplierCosts.reduce((sum, c) => sum + c.amount, 0);
+  
+  // Profit calculations
   const grossProfit = totalInflows - totalSupplierCosts;
   const profitMargin = totalInflows > 0 ? (grossProfit / totalInflows) * 100 : 0;
   
-  const accountPayments = project.payments.filter(p => p.type === 'account').reduce((sum, p) => sum + p.amount, 0);
-  const cashPayments = project.payments.filter(p => p.type === 'cash').reduce((sum, p) => sum + p.amount, 0);
-  
   return {
+    // Value breakdown
+    goodsTotal: project.goodsTotal,
+    feesTotal: project.feesTotal,
+    vatAmount: projectValue.vatAmount,
+    totalProjectValue: projectValue.totalIncVat,
+    
+    // Payments received
+    accountPayments,
+    feesPayments,
     totalInflows,
+    
+    // Costs
     totalSupplierCosts,
+    
+    // Profit
     grossProfit,
     profitMargin,
-    accountPayments,
-    cashPayments,
   };
 };
 
+// For backward compatibility - calculate total value
+export const getTotalProjectValue = (project: Project): number => {
+  return calculateProjectValue(project).totalIncVat;
+};

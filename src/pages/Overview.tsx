@@ -7,15 +7,14 @@ const Overview = () => {
   const { state } = useDashboard();
   
   // Calculate totals
-  const totalProjectValue = state.projects.reduce((sum, p) => sum + p.totalValue, 0);
-  const totalInflows = state.projects.reduce((sum, p) => {
-    const { totalInflows } = calculateProjectFinancials(p);
-    return sum + totalInflows;
-  }, 0);
-  const totalSupplierCosts = state.projects.reduce((sum, p) => {
-    const { totalSupplierCosts } = calculateProjectFinancials(p);
-    return sum + totalSupplierCosts;
-  }, 0);
+  const projectFinancials = state.projects.map(p => ({
+    ...p,
+    financials: calculateProjectFinancials(p),
+  }));
+  
+  const totalProjectValue = projectFinancials.reduce((sum, p) => sum + p.financials.totalProjectValue, 0);
+  const totalInflows = projectFinancials.reduce((sum, p) => sum + p.financials.totalInflows, 0);
+  const totalSupplierCosts = projectFinancials.reduce((sum, p) => sum + p.financials.totalSupplierCosts, 0);
   const totalOperationalCosts = state.operationalCosts.reduce((sum, c) => sum + c.amount, 0);
   const grossProfit = totalInflows - totalSupplierCosts;
   const netProfit = grossProfit - totalOperationalCosts;
@@ -186,7 +185,7 @@ const Overview = () => {
                         </Link>
                       </td>
                       <td>{project.clientName}</td>
-                      <td>{formatCurrency(project.totalValue)}</td>
+                      <td>{formatCurrency(financials.totalProjectValue)}</td>
                       <td>{formatCurrency(financials.totalInflows)}</td>
                       <td className={financials.grossProfit >= 0 ? 'project-stat-value positive' : 'project-stat-value negative'}>
                         {formatCurrency(financials.grossProfit)}
@@ -209,4 +208,3 @@ const Overview = () => {
 };
 
 export default Overview;
-
