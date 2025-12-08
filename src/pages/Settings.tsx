@@ -154,7 +154,7 @@ const Settings = () => {
         <div className="card-body">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
             <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 300, color: 'var(--color-black)', fontFamily: 'Inter, sans-serif' }}>
                 {state.projects.length}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '2px' }}>
@@ -162,7 +162,7 @@ const Settings = () => {
               </div>
             </div>
             <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 300, color: 'var(--color-black)', fontFamily: 'Inter, sans-serif' }}>
                 {state.projects.reduce((sum, p) => sum + p.payments.length, 0)}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '2px' }}>
@@ -170,7 +170,7 @@ const Settings = () => {
               </div>
             </div>
             <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 300, color: 'var(--color-black)', fontFamily: 'Inter, sans-serif' }}>
                 {state.projects.reduce((sum, p) => sum + p.supplierCosts.length, 0)}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '2px' }}>
@@ -178,7 +178,7 @@ const Settings = () => {
               </div>
             </div>
             <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 300, color: 'var(--color-black)', fontFamily: 'Inter, sans-serif' }}>
                 {state.operationalCosts.length}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '2px' }}>
@@ -195,7 +195,7 @@ const Settings = () => {
           <h3 className="card-title">About</h3>
         </div>
         <div className="card-body">
-          <p style={{ marginBottom: '1rem', fontFamily: 'Cormorant Garamond, serif', fontSize: '1.25rem' }}>
+          <p style={{ marginBottom: '1rem', fontFamily: 'Inter, sans-serif', fontSize: '1.25rem' }}>
             <strong>House of Clarence</strong>
           </p>
           <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>

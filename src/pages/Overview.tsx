@@ -99,19 +99,19 @@ const Overview = () => {
             <div style={{ display: 'flex', gap: '2rem' }}>
               <div>
                 <div className="stat-label">Active</div>
-                <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-success)', fontFamily: 'Cormorant Garamond, serif' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 300, color: 'var(--color-success)', fontFamily: 'Inter, sans-serif' }}>
                   {activeProjects}
                 </div>
               </div>
               <div>
                 <div className="stat-label">Completed</div>
-                <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-text)', fontFamily: 'Cormorant Garamond, serif' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 300, color: 'var(--color-text)', fontFamily: 'Inter, sans-serif' }}>
                   {completedProjects}
                 </div>
               </div>
               <div>
                 <div className="stat-label">On Hold</div>
-                <div style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--color-warning)', fontFamily: 'Cormorant Garamond, serif' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 300, color: 'var(--color-warning)', fontFamily: 'Inter, sans-serif' }}>
                   {state.projects.filter(p => p.status === 'on_hold').length}
                 </div>
               </div>

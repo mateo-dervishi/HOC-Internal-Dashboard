@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
   /* House of Clarence Brand Colors - Refined Black & White */
@@ -66,11 +66,11 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-weight: 400;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 300;
   line-height: 1.2;
   color: var(--color-black);
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* App Layout */
@@ -97,12 +97,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sidebar-logo {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.1rem;
-  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 300;
   color: var(--color-white);
   text-transform: uppercase;
-  letter-spacing: 4px;
+  letter-spacing: 3px;
   margin-bottom: 0.5rem;
 }
 
@@ -171,10 +171,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .page-title {
-  font-size: 2.5rem;
+  font-size: 2.25rem;
   font-weight: 300;
   margin-bottom: 0.5rem;
-  letter-spacing: 0.03em;
+  letter-spacing: -0.02em;
 }
 
 .page-subtitle {
@@ -270,11 +270,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .stat-value {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Inter', sans-serif;
   font-size: 2.5rem;
-  font-weight: 400;
+  font-weight: 300;
   color: var(--color-black);
-  letter-spacing: 0.01em;
+  letter-spacing: -0.02em;
 }
 
 .stat-change {
@@ -519,11 +519,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .project-code {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 2rem;
-  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 300;
   color: var(--color-white);
-  letter-spacing: 2px;
+  letter-spacing: 0.5px;
 }
 
 .project-client {
@@ -621,8 +621,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .modal-title {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 300;
+  letter-spacing: -0.01em;
 }
 
 .modal-close {
@@ -693,9 +694,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .payment-term-percent {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1.75rem;
-  font-weight: 400;
+  font-weight: 300;
   color: var(--color-black);
 }
 

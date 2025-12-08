@@ -292,7 +292,7 @@ const ProjectDetail = () => {
                 className="form-input"
                 value={editForm.code}
                 onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
-                style={{ fontSize: '2rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 400 }}
+                style={{ fontSize: '2rem', fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
               />
               <input
                 type="text"
@@ -518,14 +518,14 @@ const ProjectDetail = () => {
           }}>
             <div>
               <div className="stat-label">Account Payments</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--color-black)', fontFamily: 'Inter, sans-serif' }}>
                 {formatCurrency(financials.accountPayments)}
               </div>
             </div>
             {project.hasCashPayment && (
               <div>
                 <div className="stat-label">Cash Payments</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-success)', fontFamily: 'Cormorant Garamond, serif' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--color-success)', fontFamily: 'Inter, sans-serif' }}>
                   {formatCurrency(financials.cashPayments)}
                 </div>
               </div>
@@ -535,7 +535,8 @@ const ProjectDetail = () => {
               <div style={{ 
                 fontSize: '1.5rem', 
                 fontWeight: 400, 
-                fontFamily: 'Cormorant Garamond, serif',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 300,
                 color: financials.totalProjectValue - financials.totalInflows > 0 ? 'var(--color-warning)' : 'var(--color-success)'
               }}>
                 {formatCurrency(Math.max(0, financials.totalProjectValue - financials.totalInflows))}

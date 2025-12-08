@@ -162,19 +162,19 @@ const NetProfit = () => {
           <div className="card-body" style={{ display: 'flex', gap: '3rem' }}>
             <div>
               <div className="stat-label">Account Payments</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--color-black)', fontFamily: 'Inter, sans-serif' }}>
                 {formatCurrency(totalAccountPayments)}
               </div>
             </div>
             <div>
               <div className="stat-label">Cash Payments</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-success)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--color-success)', fontFamily: 'Inter, sans-serif' }}>
                 {formatCurrency(totalCashPayments)}
               </div>
             </div>
             <div>
               <div className="stat-label">Total Received</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--color-black)', fontFamily: 'Inter, sans-serif' }}>
                 {formatCurrency(totalInflows)}
               </div>
             </div>
@@ -416,20 +416,20 @@ const NetProfit = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', textAlign: 'center', alignItems: 'center' }}>
             <div>
               <div className="stat-label">Gross Profit</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 300, color: 'var(--color-black)', fontFamily: 'Inter, sans-serif' }}>
                 {formatCurrency(totalGrossProfit)}
               </div>
             </div>
             <div style={{ fontSize: '1.5rem', color: 'var(--color-text-muted)' }}>−</div>
             <div>
               <div className="stat-label">Fixed Costs</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--color-error)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 300, color: 'var(--color-error)', fontFamily: 'Inter, sans-serif' }}>
                 {formatCurrency(totalFixedCosts)}
               </div>
             </div>
             <div>
               <div className="stat-label">Variable Costs</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--color-error)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 300, color: 'var(--color-error)', fontFamily: 'Inter, sans-serif' }}>
                 {formatCurrency(totalVariableCosts)}
               </div>
             </div>
@@ -437,8 +437,8 @@ const NetProfit = () => {
               <div className="stat-label">Net Profit</div>
               <div style={{ 
                 fontSize: '1.5rem', 
-                fontWeight: 400, 
-                fontFamily: 'Cormorant Garamond, serif',
+                fontWeight: 300, 
+                fontFamily: 'Inter, sans-serif',
                 color: netProfit >= 0 ? 'var(--color-success)' : 'var(--color-error)'
               }}>
                 {formatCurrency(netProfit)}
