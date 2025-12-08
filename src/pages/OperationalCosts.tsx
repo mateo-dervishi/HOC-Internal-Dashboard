@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, Edit3, Building2, Users, Calendar, TrendingUp, Filter } from 'lucide-react';
+import { Plus, Trash2, Edit3, Building2, Users, TrendingUp, Filter } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { FIXED_COST_CATEGORIES, VARIABLE_COST_CATEGORIES } from '../types';
 import type { OperationalCost, CostType } from '../types';
