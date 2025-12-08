@@ -349,11 +349,12 @@ const ProjectDetail = () => {
               )}
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {!project.hasCashPayment && (
-                <button className="btn btn-secondary btn-sm" onClick={handleToggleCP}>
-                  <Banknote size={16} /> Enable CP
-                </button>
-              )}
+              <button 
+                className={`btn ${project.hasCashPayment ? 'btn-ghost' : 'btn-secondary'} btn-sm`} 
+                onClick={handleToggleCP}
+              >
+                <Banknote size={16} /> {project.hasCashPayment ? 'Disable CP' : 'Enable CP'}
+              </button>
               <button className="btn btn-ghost btn-sm" onClick={() => setIsEditing(true)}>
                 <Edit3 size={16} /> Edit
               </button>
