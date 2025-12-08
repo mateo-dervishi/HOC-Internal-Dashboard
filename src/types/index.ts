@@ -77,7 +77,7 @@ export const calculateProjectValue = (project: Project) => {
 export const calculateExpectedPayments = (
   goodsTotal: number,
   feesTotal: number,
-  paymentType: PaymentType
+  _paymentType?: PaymentType
 ): {
   upfront: { account: number; fees: number; accountVat: number };
   production: { account: number; fees: number; accountVat: number };

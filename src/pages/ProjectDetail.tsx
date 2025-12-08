@@ -11,7 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { calculateProjectFinancials, calculateExpectedPayments, VAT_RATE } from '../types';
+import { calculateProjectFinancials, calculateExpectedPayments } from '../types';
 import type { Payment, SupplierCost, PaymentType } from '../types';
 
 const ProjectDetail = () => {
