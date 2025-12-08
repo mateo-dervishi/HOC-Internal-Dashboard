@@ -534,9 +534,8 @@ const ProjectDetail = () => {
               <div className="stat-label">Outstanding</div>
               <div style={{ 
                 fontSize: '1.5rem', 
-                fontWeight: 400, 
+                fontWeight: 300, 
                 fontFamily: 'Inter, sans-serif',
-                fontWeight: 300,
                 color: financials.totalProjectValue - financials.totalInflows > 0 ? 'var(--color-warning)' : 'var(--color-success)'
               }}>
                 {formatCurrency(Math.max(0, financials.totalProjectValue - financials.totalInflows))}
