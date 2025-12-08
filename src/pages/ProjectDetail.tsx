@@ -11,13 +11,8 @@ import {
   X
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { 
-  Payment, 
-  SupplierCost, 
-  calculateProjectFinancials, 
-  calculateExpectedPayments,
-  PaymentType 
-} from '../types';
+import { calculateProjectFinancials, calculateExpectedPayments } from '../types';
+import type { Payment, SupplierCost, PaymentType } from '../types';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();

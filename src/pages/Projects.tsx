@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, FolderKanban, Search } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { Project, PaymentType, calculateProjectFinancials, calculateExpectedPayments } from '../types';
+import { calculateProjectFinancials, calculateExpectedPayments } from '../types';
+import type { Project, PaymentType } from '../types';
 
 const Projects = () => {
   const { state, dispatch } = useDashboard();

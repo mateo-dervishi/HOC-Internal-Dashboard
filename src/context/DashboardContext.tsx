@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { Project, OperationalCost, DashboardState } from '../types';
+import React, { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
+import type { Project, OperationalCost, DashboardState } from '../types';
 
 type Action =
   | { type: 'ADD_PROJECT'; payload: Project }
