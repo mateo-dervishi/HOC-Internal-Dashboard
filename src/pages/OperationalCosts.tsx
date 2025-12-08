@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Plus, Trash2, Edit3, Building2, Users, TrendingUp, Filter } from 'lucide-react';
+import { Plus, Trash2, Edit3, Building2, Users, TrendingUp, Filter, PlusCircle } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { FIXED_COST_CATEGORIES, VARIABLE_COST_CATEGORIES } from '../types';
 import type { OperationalCost, CostType } from '../types';
 
 const OperationalCosts = () => {
@@ -20,6 +19,16 @@ const OperationalCosts = () => {
     description: '',
     isRecurring: false,
   });
+  const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  
+  // Get existing categories from previously added costs
+  const existingFixedCategories = [...new Set(
+    state.operationalCosts.filter(c => c.costType === 'fixed').map(c => c.category)
+  )].sort();
+  const existingVariableCategories = [...new Set(
+    state.operationalCosts.filter(c => c.costType === 'variable').map(c => c.category)
+  )].sort();
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
@@ -134,6 +143,8 @@ const OperationalCosts = () => {
     
     setShowModal(false);
     setEditingCost(null);
+    setIsCreatingNewCategory(false);
+    setNewCategoryName('');
     setNewCost({
       amount: '',
       category: '',
@@ -495,7 +506,11 @@ const OperationalCosts = () => {
                         name="costType"
                         value="fixed"
                         checked={newCost.costType === 'fixed'}
-                        onChange={(e) => setNewCost({ ...newCost, costType: e.target.value as CostType, category: '' })}
+                        onChange={(e) => {
+                          setNewCost({ ...newCost, costType: e.target.value as CostType, category: '' });
+                          setIsCreatingNewCategory(false);
+                          setNewCategoryName('');
+                        }}
                       />
                       <div>
                         <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -520,7 +535,11 @@ const OperationalCosts = () => {
                         name="costType"
                         value="variable"
                         checked={newCost.costType === 'variable'}
-                        onChange={(e) => setNewCost({ ...newCost, costType: e.target.value as CostType, category: '' })}
+                        onChange={(e) => {
+                          setNewCost({ ...newCost, costType: e.target.value as CostType, category: '' });
+                          setIsCreatingNewCategory(false);
+                          setNewCategoryName('');
+                        }}
                       />
                       <div>
                         <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -560,17 +579,82 @@ const OperationalCosts = () => {
                 
                 <div className="form-group">
                   <label className="form-label">Category</label>
-                  <select
-                    className="form-select"
-                    value={newCost.category}
-                    onChange={(e) => setNewCost({ ...newCost, category: e.target.value })}
-                    required
-                  >
-                    <option value="">Select a category...</option>
-                    {(newCost.costType === 'fixed' ? FIXED_COST_CATEGORIES : VARIABLE_COST_CATEGORIES).map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  {isCreatingNewCategory ? (
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Enter new category name..."
+                        autoFocus
+                        required
+                      />
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          if (newCategoryName.trim()) {
+                            setNewCost({ ...newCost, category: newCategoryName.trim() });
+                            setIsCreatingNewCategory(false);
+                          }
+                        }}
+                      >
+                        Add
+                      </button>
+                      <button 
+                        type="button" 
+                        className="btn btn-ghost"
+                        onClick={() => {
+                          setIsCreatingNewCategory(false);
+                          setNewCategoryName('');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {((newCost.costType === 'fixed' ? existingFixedCategories : existingVariableCategories).length > 0) ? (
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <select
+                            className="form-select"
+                            value={newCost.category}
+                            onChange={(e) => setNewCost({ ...newCost, category: e.target.value })}
+                            required={!isCreatingNewCategory}
+                            style={{ flex: 1 }}
+                          >
+                            <option value="">Select a category...</option>
+                            {(newCost.costType === 'fixed' ? existingFixedCategories : existingVariableCategories).map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                          <button 
+                            type="button" 
+                            className="btn btn-secondary"
+                            onClick={() => setIsCreatingNewCategory(true)}
+                            title="Create new category"
+                          >
+                            <PlusCircle size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={newCost.category}
+                            onChange={(e) => setNewCost({ ...newCost, category: e.target.value })}
+                            placeholder="Enter category name (e.g., Warehouse Rent)"
+                            required
+                          />
+                          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                            This will be your first {newCost.costType} cost category
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
                 
                 <div className="form-group mb-0">
