@@ -11,7 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { calculateProjectFinancials, calculateExpectedPayments } from '../types';
+import { calculateProjectFinancials, calculateExpectedPayments, calculateProjectBreakdown } from '../types';
 import type { Payment, SupplierCost, PaymentType } from '../types';
 
 const ProjectDetail = () => {
@@ -29,8 +29,7 @@ const ProjectDetail = () => {
   const [editForm, setEditForm] = useState({
     code: project?.code || '',
     clientName: project?.clientName || '',
-    goodsTotal: project?.goodsTotal?.toString() || '',
-    feesTotal: project?.feesTotal?.toString() || '',
+    totalValue: project?.totalValue?.toString() || '',
     paymentType: project?.paymentType || 'full_account' as PaymentType,
     status: project?.status || 'active',
     notes: project?.notes || '',
@@ -69,7 +68,8 @@ const ProjectDetail = () => {
   }
   
   const financials = calculateProjectFinancials(project);
-  const expectedPayments = calculateExpectedPayments(project.goodsTotal, project.feesTotal, project.paymentType);
+  const expectedPayments = calculateExpectedPayments(project.totalValue, project.paymentType);
+  const breakdown = calculateProjectBreakdown(project.totalValue, project.paymentType);
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
@@ -163,8 +163,7 @@ const ProjectDetail = () => {
         ...project,
         code: editForm.code,
         clientName: editForm.clientName,
-        goodsTotal: parseFloat(editForm.goodsTotal) || 0,
-        feesTotal: parseFloat(editForm.feesTotal) || 0,
+        totalValue: parseFloat(editForm.totalValue) || 0,
         paymentType: editForm.paymentType,
         status: editForm.status as 'active' | 'completed' | 'on_hold',
         notes: editForm.notes,
@@ -180,10 +179,10 @@ const ProjectDetail = () => {
     }
   };
   
-  // Calculate payments by stage and type
-  const getStagePayments = (stage: Payment['stage'], type?: Payment['type']) => {
+  // Calculate payments by stage
+  const getStagePayments = (stage: Payment['stage']) => {
     return project.payments
-      .filter(p => p.stage === stage && (type ? p.type === type : true))
+      .filter(p => p.stage === stage)
       .reduce((sum, p) => sum + p.amount, 0);
   };
   
@@ -201,11 +200,9 @@ const ProjectDetail = () => {
           <span className={`badge badge-${project.status === 'active' ? 'success' : project.status === 'completed' ? 'neutral' : 'warning'}`}>
             {project.status}
           </span>
-          {project.feesTotal > 0 && (
-            <span className="badge badge-neutral">
-              Has Fees (Cash)
-            </span>
-          )}
+          <span className="badge badge-neutral">
+            {project.paymentType === 'account_cp' ? 'Acc/CP (60/40)' : 'Full Account'}
+          </span>
         </div>
         
         {isEditing ? (
@@ -261,25 +258,29 @@ const ProjectDetail = () => {
               <input
                 type="number"
                 className="form-input"
-                value={editForm.goodsTotal}
-                onChange={(e) => setEditForm({ ...editForm, goodsTotal: e.target.value })}
-                placeholder="Goods (Ex VAT)"
+                value={editForm.totalValue}
+                onChange={(e) => setEditForm({ ...editForm, totalValue: e.target.value })}
+                placeholder="Total Value"
               />
-              <input
-                type="number"
-                className="form-input"
-                value={editForm.feesTotal}
-                onChange={(e) => setEditForm({ ...editForm, feesTotal: e.target.value })}
-                placeholder="Fees (Cash)"
+              <select
+                className="form-select"
+                value={editForm.paymentType}
+                onChange={(e) => setEditForm({ ...editForm, paymentType: e.target.value as PaymentType })}
                 style={{ marginTop: '0.5rem' }}
-              />
+              >
+                <option value="full_account">Full Account</option>
+                <option value="account_cp">Acc/CP (60/40)</option>
+              </select>
             </div>
           ) : (
             <>
               <div className="stat-value">{formatCurrency(financials.totalProjectValue)}</div>
               <div className="stat-change">
-                Goods: {formatCurrency(project.goodsTotal)} + VAT: {formatCurrency(financials.vatAmount)}
-                {project.feesTotal > 0 && <> + Fees: {formatCurrency(project.feesTotal)}</>}
+                {project.paymentType === 'account_cp' ? (
+                  <>Acc: {formatCurrency(breakdown.accountExVat)} + VAT + Cash: {formatCurrency(breakdown.feesTotal)}</>
+                ) : (
+                  <>Value: {formatCurrency(project.totalValue)} + VAT: {formatCurrency(breakdown.vatAmount)}</>
+                )}
               </div>
             </>
           )}
@@ -336,7 +337,7 @@ const ProjectDetail = () => {
                   style={{ 
                     width: `${Math.min(
                       (getStagePayments('upfront') / 
-                      (expectedPayments.upfront.account + expectedPayments.upfront.accountVat + expectedPayments.upfront.fees)) * 100, 
+                      (expectedPayments.upfront.account + expectedPayments.upfront.accountVat + expectedPayments.upfront.fees || 1)) * 100, 
                       100
                     )}%` 
                   }} 
@@ -362,7 +363,7 @@ const ProjectDetail = () => {
                   style={{ 
                     width: `${Math.min(
                       (getStagePayments('production') / 
-                      (expectedPayments.production.account + expectedPayments.production.accountVat + expectedPayments.production.fees)) * 100, 
+                      (expectedPayments.production.account + expectedPayments.production.accountVat + expectedPayments.production.fees || 1)) * 100, 
                       100
                     )}%` 
                   }} 
@@ -388,7 +389,7 @@ const ProjectDetail = () => {
                   style={{ 
                     width: `${Math.min(
                       (getStagePayments('delivery') / 
-                      (expectedPayments.delivery.account + expectedPayments.delivery.accountVat + expectedPayments.delivery.fees)) * 100, 
+                      (expectedPayments.delivery.account + expectedPayments.delivery.accountVat + expectedPayments.delivery.fees || 1)) * 100, 
                       100
                     )}%` 
                   }} 
@@ -397,7 +398,7 @@ const ProjectDetail = () => {
             </div>
           </div>
           
-          {/* Account vs Fees Breakdown */}
+          {/* Account vs Cash Breakdown */}
           <div style={{ 
             marginTop: '1.5rem', 
             padding: '1rem', 
@@ -407,17 +408,19 @@ const ProjectDetail = () => {
             gap: '2rem'
           }}>
             <div>
-              <div className="stat-label">Account Payments (VATable)</div>
+              <div className="stat-label">Account Payments</div>
               <div style={{ fontSize: '1.25rem', fontWeight: 500, color: 'var(--color-black)' }}>
                 {formatCurrency(financials.accountPayments)}
               </div>
             </div>
-            <div>
-              <div className="stat-label">Fees Payments (Cash)</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 500, color: 'var(--color-success)' }}>
-                {formatCurrency(financials.feesPayments)}
+            {project.paymentType === 'account_cp' && (
+              <div>
+                <div className="stat-label">Cash Payments</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 500, color: 'var(--color-success)' }}>
+                  {formatCurrency(financials.feesPayments)}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -452,7 +455,7 @@ const ProjectDetail = () => {
                         <td style={{ textTransform: 'capitalize' }}>{payment.stage}</td>
                         <td>
                           <span className={`badge ${payment.type === 'fees' ? 'badge-success' : 'badge-neutral'}`}>
-                            {payment.type === 'fees' ? 'Fees (Cash)' : 'Account'}
+                            {payment.type === 'fees' ? 'Cash' : 'Account'}
                           </span>
                         </td>
                         <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
@@ -610,8 +613,10 @@ const ProjectDetail = () => {
                       value={newPayment.type}
                       onChange={(e) => setNewPayment({ ...newPayment, type: e.target.value as Payment['type'] })}
                     >
-                      <option value="account">Account (VATable)</option>
-                      <option value="fees">Fees / Cash (Non-VAT)</option>
+                      <option value="account">Account</option>
+                      {project.paymentType === 'account_cp' && (
+                        <option value="fees">Cash</option>
+                      )}
                     </select>
                   </div>
                 </div>

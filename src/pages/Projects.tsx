@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, FolderKanban, Search } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { calculateProjectFinancials, calculateExpectedPayments, VAT_RATE } from '../types';
+import { calculateProjectFinancials, calculateExpectedPayments, calculateProjectBreakdown } from '../types';
 import type { Project, PaymentType } from '../types';
 
 const Projects = () => {
@@ -15,8 +15,7 @@ const Projects = () => {
   const [newProject, setNewProject] = useState({
     code: '',
     clientName: '',
-    goodsTotal: '',    // VATable portion
-    feesTotal: '',     // Cash/Fees - non-VATable
+    totalValue: '',
     paymentType: 'full_account' as PaymentType,
     notes: '',
   });
@@ -28,8 +27,7 @@ const Projects = () => {
       id: crypto.randomUUID(),
       code: newProject.code,
       clientName: newProject.clientName,
-      goodsTotal: parseFloat(newProject.goodsTotal) || 0,
-      feesTotal: parseFloat(newProject.feesTotal) || 0,
+      totalValue: parseFloat(newProject.totalValue) || 0,
       paymentType: newProject.paymentType,
       payments: [],
       supplierCosts: [],
@@ -43,8 +41,7 @@ const Projects = () => {
     setNewProject({
       code: '',
       clientName: '',
-      goodsTotal: '',
-      feesTotal: '',
+      totalValue: '',
       paymentType: 'full_account',
       notes: '',
     });
@@ -68,11 +65,13 @@ const Projects = () => {
     return matchesSearch && matchesStatus;
   });
   
-  // Calculate expected payments for preview
-  const goodsValue = parseFloat(newProject.goodsTotal) || 0;
-  const feesValue = parseFloat(newProject.feesTotal) || 0;
-  const expectedPayments = (goodsValue > 0 || feesValue > 0)
-    ? calculateExpectedPayments(goodsValue, feesValue, newProject.paymentType)
+  // Calculate preview values
+  const totalValue = parseFloat(newProject.totalValue) || 0;
+  const expectedPayments = totalValue > 0
+    ? calculateExpectedPayments(totalValue, newProject.paymentType)
+    : null;
+  const breakdown = totalValue > 0
+    ? calculateProjectBreakdown(totalValue, newProject.paymentType)
     : null;
 
   return (
@@ -160,14 +159,12 @@ const Projects = () => {
                         {formatCurrency(financials.grossProfit)}
                       </span>
                     </div>
-                    {project.feesTotal > 0 && (
-                      <div className="project-stat">
-                        <span className="project-stat-label">Fees (Cash)</span>
-                        <span className="project-stat-value" style={{ fontSize: '0.85rem' }}>
-                          {formatCurrency(project.feesTotal)}
-                        </span>
-                      </div>
-                    )}
+                    <div className="project-stat">
+                      <span className="project-stat-label">Payment Type</span>
+                      <span className="project-stat-value" style={{ fontSize: '0.85rem' }}>
+                        {project.paymentType === 'account_cp' ? 'Acc/CP (60/40)' : 'Full Account'}
+                      </span>
+                    </div>
                     <div style={{ marginTop: '1rem' }}>
                       <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
                         Collection: {Math.round(collectionRate)}%
@@ -241,47 +238,40 @@ const Projects = () => {
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Goods Total (Ex VAT)</label>
+                    <label className="form-label">Total Project Value (£)</label>
                     <input
                       type="number"
                       className="form-input"
                       placeholder="0.00"
-                      value={newProject.goodsTotal}
-                      onChange={(e) => setNewProject({ ...newProject, goodsTotal: e.target.value })}
+                      value={newProject.totalValue}
+                      onChange={(e) => setNewProject({ ...newProject, totalValue: e.target.value })}
                       min="0"
                       step="0.01"
                       required
                     />
-                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                      VATable portion - goes through account
-                    </small>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Fees (Cash - No VAT)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      placeholder="0.00"
-                      value={newProject.feesTotal}
-                      onChange={(e) => setNewProject({ ...newProject, feesTotal: e.target.value })}
-                      min="0"
-                      step="0.01"
-                    />
-                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                      Non-VATable - cash payment
-                    </small>
+                    <label className="form-label">Payment Type</label>
+                    <select
+                      className="form-select"
+                      value={newProject.paymentType}
+                      onChange={(e) => setNewProject({ ...newProject, paymentType: e.target.value as PaymentType })}
+                    >
+                      <option value="full_account">Full Account (100%)</option>
+                      <option value="account_cp">Acc/CP (60% Account / 40% Cash)</option>
+                    </select>
                   </div>
                 </div>
                 
                 {/* Payment Terms Preview */}
-                {expectedPayments && (
+                {expectedPayments && breakdown && (
                   <div className="payment-terms">
-                    <div className="payment-terms-title">Payment Schedule (20/70/10)</div>
+                    <div className="payment-terms-title">Payment Breakdown</div>
                     
-                    {/* Totals Summary */}
+                    {/* Value Summary */}
                     <div style={{ 
                       display: 'grid', 
-                      gridTemplateColumns: 'repeat(4, 1fr)', 
+                      gridTemplateColumns: newProject.paymentType === 'account_cp' ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', 
                       gap: '0.75rem',
                       marginBottom: '1.25rem',
                       padding: '1rem',
@@ -290,23 +280,28 @@ const Projects = () => {
                       border: '1px solid var(--color-border)'
                     }}>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.25rem' }}>Goods</div>
-                        <div style={{ fontWeight: 500 }}>{formatCurrency(goodsValue)}</div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.25rem' }}>
+                          {newProject.paymentType === 'account_cp' ? 'Account (60%)' : 'Value'}
+                        </div>
+                        <div style={{ fontWeight: 500 }}>{formatCurrency(breakdown.accountExVat)}</div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.25rem' }}>VAT (20%)</div>
-                        <div style={{ fontWeight: 500 }}>{formatCurrency(goodsValue * VAT_RATE)}</div>
+                        <div style={{ fontWeight: 500 }}>{formatCurrency(breakdown.vatAmount)}</div>
                       </div>
+                      {newProject.paymentType === 'account_cp' && (
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.25rem' }}>Cash (40%)</div>
+                          <div style={{ fontWeight: 500, color: 'var(--color-success)' }}>{formatCurrency(breakdown.feesTotal)}</div>
+                        </div>
+                      )}
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.25rem' }}>Fees</div>
-                        <div style={{ fontWeight: 500, color: 'var(--color-success)' }}>{formatCurrency(feesValue)}</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.25rem' }}>Total</div>
-                        <div style={{ fontWeight: 600 }}>{formatCurrency(expectedPayments.totals.total)}</div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.25rem' }}>Total Inc VAT</div>
+                        <div style={{ fontWeight: 600 }}>{formatCurrency(breakdown.totalIncVat)}</div>
                       </div>
                     </div>
                     
+                    <div className="payment-terms-title" style={{ marginTop: '1rem' }}>Payment Schedule (20/70/10)</div>
                     <div className="payment-terms-grid">
                       <div className="payment-term">
                         <div className="payment-term-stage">Upfront (20%)</div>
@@ -317,10 +312,10 @@ const Projects = () => {
                             expectedPayments.upfront.fees
                           )}
                         </div>
-                        {feesValue > 0 && (
+                        {newProject.paymentType === 'account_cp' && (
                           <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
                             Acc: {formatCurrency(expectedPayments.upfront.account + expectedPayments.upfront.accountVat)}<br/>
-                            Fees: {formatCurrency(expectedPayments.upfront.fees)}
+                            Cash: {formatCurrency(expectedPayments.upfront.fees)}
                           </div>
                         )}
                       </div>
@@ -333,10 +328,10 @@ const Projects = () => {
                             expectedPayments.production.fees
                           )}
                         </div>
-                        {feesValue > 0 && (
+                        {newProject.paymentType === 'account_cp' && (
                           <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
                             Acc: {formatCurrency(expectedPayments.production.account + expectedPayments.production.accountVat)}<br/>
-                            Fees: {formatCurrency(expectedPayments.production.fees)}
+                            Cash: {formatCurrency(expectedPayments.production.fees)}
                           </div>
                         )}
                       </div>
@@ -349,10 +344,10 @@ const Projects = () => {
                             expectedPayments.delivery.fees
                           )}
                         </div>
-                        {feesValue > 0 && (
+                        {newProject.paymentType === 'account_cp' && (
                           <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
                             Acc: {formatCurrency(expectedPayments.delivery.account + expectedPayments.delivery.accountVat)}<br/>
-                            Fees: {formatCurrency(expectedPayments.delivery.fees)}
+                            Cash: {formatCurrency(expectedPayments.delivery.fees)}
                           </div>
                         )}
                       </div>
