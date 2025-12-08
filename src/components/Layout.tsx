@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, PoundSterling, Settings } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, PoundSterling, Receipt, Settings } from 'lucide-react';
 
 const Layout = () => {
   return (
@@ -24,6 +24,11 @@ const Layout = () => {
           <NavLink to="/profit" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <PoundSterling />
             <span>Net Profit</span>
+          </NavLink>
+          
+          <NavLink to="/costs" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <Receipt />
+            <span>Costs</span>
           </NavLink>
           
           <NavLink to="/settings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>

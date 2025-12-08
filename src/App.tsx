@@ -5,6 +5,7 @@ import Overview from './pages/Overview';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
 import NetProfit from './pages/NetProfit';
+import OperationalCosts from './pages/OperationalCosts';
 import Settings from './pages/Settings';
 import './index.css';
 
@@ -18,6 +19,7 @@ function App() {
             <Route path="projects" element={<Projects />} />
             <Route path="projects/:id" element={<ProjectDetail />} />
             <Route path="profit" element={<NetProfit />} />
+            <Route path="costs" element={<OperationalCosts />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
