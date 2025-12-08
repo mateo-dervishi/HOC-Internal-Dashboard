@@ -8,11 +8,13 @@ import {
   TrendingDown, 
   Edit3,
   Save,
-  X
+  X,
+  FileText,
+  Banknote
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { calculateProjectFinancials, calculateExpectedPayments, calculateProjectBreakdown } from '../types';
-import type { Payment, SupplierCost, PaymentType } from '../types';
+import { calculateProjectFinancials, calculateValuationTotals, VAT_RATE } from '../types';
+import type { Payment, SupplierCost, Valuation } from '../types';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,25 +23,37 @@ const ProjectDetail = () => {
   
   const project = state.projects.find(p => p.id === id);
   
+  const [showValuationModal, setShowValuationModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCostModal, setShowCostModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingValuation, setEditingValuation] = useState<Valuation | null>(null);
   
   // Edit form state
   const [editForm, setEditForm] = useState({
     code: project?.code || '',
     clientName: project?.clientName || '',
-    totalValue: project?.totalValue?.toString() || '',
-    paymentType: project?.paymentType || 'full_account' as PaymentType,
+    address: project?.address || '',
     status: project?.status || 'active',
+    hasCashPayment: project?.hasCashPayment || false,
     notes: project?.notes || '',
+  });
+  
+  // New valuation form state
+  const [newValuation, setNewValuation] = useState({
+    name: '',
+    date: new Date().toISOString().split('T')[0],
+    grandTotal: '',
+    fees: '',
+    omissions: '',
+    notes: '',
   });
   
   // New payment form state
   const [newPayment, setNewPayment] = useState({
     amount: '',
-    stage: 'upfront' as Payment['stage'],
     type: 'account' as Payment['type'],
+    valuationId: '',
     date: new Date().toISOString().split('T')[0],
     description: '',
   });
@@ -68,8 +82,6 @@ const ProjectDetail = () => {
   }
   
   const financials = calculateProjectFinancials(project);
-  const expectedPayments = calculateExpectedPayments(project.totalValue, project.paymentType);
-  const breakdown = calculateProjectBreakdown(project.totalValue, project.paymentType);
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
@@ -88,14 +100,78 @@ const ProjectDetail = () => {
     });
   };
   
+  const handleAddValuation = (e: React.FormEvent) => {
+    e.preventDefault();
+    const valuation: Valuation = {
+      id: editingValuation?.id || crypto.randomUUID(),
+      name: newValuation.name,
+      date: newValuation.date,
+      grandTotal: parseFloat(newValuation.grandTotal) || 0,
+      fees: parseFloat(newValuation.fees) || 0,
+      omissions: parseFloat(newValuation.omissions) || 0,
+      notes: newValuation.notes,
+    };
+    
+    if (editingValuation) {
+      // Update existing valuation
+      const updatedValuations = project.valuations.map(v => 
+        v.id === editingValuation.id ? valuation : v
+      );
+      dispatch({
+        type: 'UPDATE_PROJECT',
+        payload: { ...project, valuations: updatedValuations },
+      });
+    } else {
+      // Add new valuation
+      dispatch({
+        type: 'UPDATE_PROJECT',
+        payload: { ...project, valuations: [...project.valuations, valuation] },
+      });
+    }
+    
+    setShowValuationModal(false);
+    setEditingValuation(null);
+    setNewValuation({
+      name: '',
+      date: new Date().toISOString().split('T')[0],
+      grandTotal: '',
+      fees: '',
+      omissions: '',
+      notes: '',
+    });
+  };
+  
+  const handleEditValuation = (valuation: Valuation) => {
+    setEditingValuation(valuation);
+    setNewValuation({
+      name: valuation.name,
+      date: valuation.date,
+      grandTotal: valuation.grandTotal.toString(),
+      fees: valuation.fees.toString(),
+      omissions: valuation.omissions.toString(),
+      notes: valuation.notes || '',
+    });
+    setShowValuationModal(true);
+  };
+  
+  const handleDeleteValuation = (valuationId: string) => {
+    if (confirm('Are you sure you want to delete this valuation?')) {
+      const updatedValuations = project.valuations.filter(v => v.id !== valuationId);
+      dispatch({
+        type: 'UPDATE_PROJECT',
+        payload: { ...project, valuations: updatedValuations },
+      });
+    }
+  };
+  
   const handleAddPayment = (e: React.FormEvent) => {
     e.preventDefault();
     const payment: Payment = {
       id: crypto.randomUUID(),
       date: newPayment.date,
       amount: parseFloat(newPayment.amount) || 0,
-      stage: newPayment.stage,
       type: newPayment.type,
+      valuationId: newPayment.valuationId || undefined,
       description: newPayment.description,
     };
     
@@ -107,8 +183,8 @@ const ProjectDetail = () => {
     setShowPaymentModal(false);
     setNewPayment({
       amount: '',
-      stage: 'upfront',
       type: 'account',
+      valuationId: '',
       date: new Date().toISOString().split('T')[0],
       description: '',
     });
@@ -163,13 +239,20 @@ const ProjectDetail = () => {
         ...project,
         code: editForm.code,
         clientName: editForm.clientName,
-        totalValue: parseFloat(editForm.totalValue) || 0,
-        paymentType: editForm.paymentType,
+        address: editForm.address,
         status: editForm.status as 'active' | 'completed' | 'on_hold',
+        hasCashPayment: editForm.hasCashPayment,
         notes: editForm.notes,
       },
     });
     setIsEditing(false);
+  };
+  
+  const handleToggleCP = () => {
+    dispatch({
+      type: 'UPDATE_PROJECT',
+      payload: { ...project, hasCashPayment: !project.hasCashPayment },
+    });
   };
   
   const handleDeleteProject = () => {
@@ -179,16 +262,12 @@ const ProjectDetail = () => {
     }
   };
   
-  // Calculate payments by stage
-  const getStagePayments = (stage: Payment['stage']) => {
-    return project.payments
-      .filter(p => p.stage === stage)
-      .reduce((sum, p) => sum + p.amount, 0);
-  };
-  
   const collectionRate = financials.totalProjectValue > 0 
     ? (financials.totalInflows / financials.totalProjectValue) * 100 
     : 0;
+  
+  // Suggest next valuation name
+  const nextValuationName = `V${project.valuations.length + 1}`;
 
   return (
     <div>
@@ -200,9 +279,9 @@ const ProjectDetail = () => {
           <span className={`badge badge-${project.status === 'active' ? 'success' : project.status === 'completed' ? 'neutral' : 'warning'}`}>
             {project.status}
           </span>
-          <span className="badge badge-neutral">
-            {project.paymentType === 'account_cp' ? 'Acc/CP (60/40)' : 'Full Account'}
-          </span>
+          {project.hasCashPayment && (
+            <span className="badge badge-success">CP Enabled</span>
+          )}
         </div>
         
         {isEditing ? (
@@ -223,6 +302,33 @@ const ProjectDetail = () => {
                 style={{ marginTop: '0.5rem' }}
                 placeholder="Client name"
               />
+              <input
+                type="text"
+                className="form-input"
+                value={editForm.address}
+                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                style={{ marginTop: '0.5rem' }}
+                placeholder="Address"
+              />
+              <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem' }}>
+                <select
+                  className="form-select"
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                >
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="on_hold">On Hold</option>
+                </select>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={editForm.hasCashPayment}
+                    onChange={(e) => setEditForm({ ...editForm, hasCashPayment: e.target.checked })}
+                  />
+                  Cash Payment (CP)
+                </label>
+              </div>
             </div>
             <button className="btn btn-primary" onClick={handleSaveEdit}>
               <Save size={18} /> Save
@@ -236,8 +342,18 @@ const ProjectDetail = () => {
             <div>
               <h1 className="page-title">{project.code}</h1>
               <p className="page-subtitle">{project.clientName}</p>
+              {project.address && (
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                  {project.address}
+                </p>
+              )}
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {!project.hasCashPayment && (
+                <button className="btn btn-secondary btn-sm" onClick={handleToggleCP}>
+                  <Banknote size={16} /> Enable CP
+                </button>
+              )}
               <button className="btn btn-ghost btn-sm" onClick={() => setIsEditing(true)}>
                 <Edit3 size={16} /> Edit
               </button>
@@ -252,38 +368,11 @@ const ProjectDetail = () => {
       {/* Stats Grid */}
       <div className="stat-grid">
         <div className="stat-card">
-          <div className="stat-label">Total Value (Inc VAT)</div>
-          {isEditing ? (
-            <div>
-              <input
-                type="number"
-                className="form-input"
-                value={editForm.totalValue}
-                onChange={(e) => setEditForm({ ...editForm, totalValue: e.target.value })}
-                placeholder="Total Value"
-              />
-              <select
-                className="form-select"
-                value={editForm.paymentType}
-                onChange={(e) => setEditForm({ ...editForm, paymentType: e.target.value as PaymentType })}
-                style={{ marginTop: '0.5rem' }}
-              >
-                <option value="full_account">Full Account</option>
-                <option value="account_cp">Acc/CP (60/40)</option>
-              </select>
-            </div>
-          ) : (
-            <>
-              <div className="stat-value">{formatCurrency(financials.totalProjectValue)}</div>
-              <div className="stat-change">
-                {project.paymentType === 'account_cp' ? (
-                  <>Acc: {formatCurrency(breakdown.accountExVat)} + VAT + Cash: {formatCurrency(breakdown.feesTotal)}</>
-                ) : (
-                  <>Value: {formatCurrency(project.totalValue)} + VAT: {formatCurrency(breakdown.vatAmount)}</>
-                )}
-              </div>
-            </>
-          )}
+          <div className="stat-label">Total Project Value</div>
+          <div className="stat-value">{formatCurrency(financials.totalProjectValue)}</div>
+          <div className="stat-change">
+            {project.valuations.length} valuation{project.valuations.length !== 1 ? 's' : ''}
+          </div>
         </div>
         
         <div className="stat-card success">
@@ -312,124 +401,154 @@ const ProjectDetail = () => {
         </div>
       </div>
       
-      {/* Payment Terms Overview */}
+      {/* Valuations Section */}
       <div className="card mb-4">
         <div className="card-header">
-          <h3 className="card-title">Payment Schedule (20/70/10)</h3>
+          <h3 className="card-title">
+            <FileText size={20} style={{ marginRight: 8, opacity: 0.7 }} />
+            Valuations
+          </h3>
+          <button className="btn btn-secondary btn-sm" onClick={() => {
+            setEditingValuation(null);
+            setNewValuation({
+              name: nextValuationName,
+              date: new Date().toISOString().split('T')[0],
+              grandTotal: '',
+              fees: '',
+              omissions: '',
+              notes: '',
+            });
+            setShowValuationModal(true);
+          }}>
+            <Plus size={16} /> Add Valuation
+          </button>
         </div>
-        <div className="card-body">
-          <div className="payment-terms-grid">
-            <div className="payment-term">
-              <div className="payment-term-stage">Upfront (20%)</div>
-              <div className="payment-term-percent">
-                {formatCurrency(getStagePayments('upfront'))}
-              </div>
-              <div className="payment-term-amount">
-                of {formatCurrency(
-                  expectedPayments.upfront.account + 
-                  expectedPayments.upfront.accountVat + 
-                  expectedPayments.upfront.fees
-                )} expected
-              </div>
-              <div className="progress-bar" style={{ marginTop: '0.75rem' }}>
-                <div 
-                  className="progress-fill" 
-                  style={{ 
-                    width: `${Math.min(
-                      (getStagePayments('upfront') / 
-                      (expectedPayments.upfront.account + expectedPayments.upfront.accountVat + expectedPayments.upfront.fees || 1)) * 100, 
-                      100
-                    )}%` 
-                  }} 
-                />
-              </div>
-            </div>
-            
-            <div className="payment-term">
-              <div className="payment-term-stage">Production (70%)</div>
-              <div className="payment-term-percent">
-                {formatCurrency(getStagePayments('production'))}
-              </div>
-              <div className="payment-term-amount">
-                of {formatCurrency(
-                  expectedPayments.production.account + 
-                  expectedPayments.production.accountVat + 
-                  expectedPayments.production.fees
-                )} expected
-              </div>
-              <div className="progress-bar" style={{ marginTop: '0.75rem' }}>
-                <div 
-                  className="progress-fill" 
-                  style={{ 
-                    width: `${Math.min(
-                      (getStagePayments('production') / 
-                      (expectedPayments.production.account + expectedPayments.production.accountVat + expectedPayments.production.fees || 1)) * 100, 
-                      100
-                    )}%` 
-                  }} 
-                />
-              </div>
-            </div>
-            
-            <div className="payment-term">
-              <div className="payment-term-stage">Delivery (10%)</div>
-              <div className="payment-term-percent">
-                {formatCurrency(getStagePayments('delivery'))}
-              </div>
-              <div className="payment-term-amount">
-                of {formatCurrency(
-                  expectedPayments.delivery.account + 
-                  expectedPayments.delivery.accountVat + 
-                  expectedPayments.delivery.fees
-                )} expected
-              </div>
-              <div className="progress-bar" style={{ marginTop: '0.75rem' }}>
-                <div 
-                  className="progress-fill" 
-                  style={{ 
-                    width: `${Math.min(
-                      (getStagePayments('delivery') / 
-                      (expectedPayments.delivery.account + expectedPayments.delivery.accountVat + expectedPayments.delivery.fees || 1)) * 100, 
-                      100
-                    )}%` 
-                  }} 
-                />
-              </div>
-            </div>
+        {project.valuations.length > 0 ? (
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Grand Total</th>
+                  {project.hasCashPayment && <th>Fees (Cash)</th>}
+                  <th>Omissions</th>
+                  <th>Subtotal</th>
+                  <th>VAT</th>
+                  <th>Total Inc VAT</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {project.valuations
+                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .map(valuation => {
+                    const calc = calculateValuationTotals(valuation, project.hasCashPayment);
+                    return (
+                      <tr key={valuation.id}>
+                        <td style={{ fontWeight: 500 }}>{valuation.name}</td>
+                        <td>{formatDate(valuation.date)}</td>
+                        <td>{formatCurrency(calc.grandTotal)}</td>
+                        {project.hasCashPayment && (
+                          <td style={{ color: 'var(--color-success)' }}>{formatCurrency(calc.fees)}</td>
+                        )}
+                        <td style={{ color: calc.omissions > 0 ? 'var(--color-error)' : 'inherit' }}>
+                          {calc.omissions > 0 ? `-${formatCurrency(calc.omissions)}` : '-'}
+                        </td>
+                        <td>{formatCurrency(calc.subtotal)}</td>
+                        <td>{formatCurrency(calc.vat)}</td>
+                        <td style={{ fontWeight: 500 }}>{formatCurrency(calc.totalIncVat)}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '0.25rem' }}>
+                            <button 
+                              className="btn btn-ghost btn-sm" 
+                              onClick={() => handleEditValuation(valuation)}
+                              style={{ padding: '0.25rem' }}
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button 
+                              className="btn btn-ghost btn-sm" 
+                              onClick={() => handleDeleteValuation(valuation.id)}
+                              style={{ padding: '0.25rem' }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+              <tfoot>
+                <tr style={{ background: 'var(--color-light-gray)' }}>
+                  <td colSpan={2}><strong>Totals</strong></td>
+                  <td><strong>{formatCurrency(financials.totalGrandTotal)}</strong></td>
+                  {project.hasCashPayment && (
+                    <td style={{ color: 'var(--color-success)' }}><strong>{formatCurrency(financials.totalFees)}</strong></td>
+                  )}
+                  <td style={{ color: 'var(--color-error)' }}>
+                    <strong>{financials.totalOmissions > 0 ? `-${formatCurrency(financials.totalOmissions)}` : '-'}</strong>
+                  </td>
+                  <td><strong>{formatCurrency(financials.totalSubtotal)}</strong></td>
+                  <td><strong>{formatCurrency(financials.totalVat)}</strong></td>
+                  <td><strong>{formatCurrency(financials.totalIncVat)}</strong></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-          
-          {/* Account vs Cash Breakdown */}
-          <div style={{ 
-            marginTop: '1.5rem', 
-            padding: '1rem', 
-            background: 'var(--color-light-gray)', 
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            gap: '2rem'
+        ) : (
+          <div className="card-body">
+            <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>
+              No valuations yet. Add your first valuation to track project value.
+            </p>
+          </div>
+        )}
+      </div>
+      
+      {/* Payment Summary */}
+      {(project.hasCashPayment || financials.totalInflows > 0) && (
+        <div className="card mb-4">
+          <div className="card-body" style={{ 
+            display: 'flex', 
+            gap: '3rem',
+            background: 'var(--color-light-gray)'
           }}>
             <div>
               <div className="stat-label">Account Payments</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 500, color: 'var(--color-black)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
                 {formatCurrency(financials.accountPayments)}
               </div>
             </div>
-            {project.paymentType === 'account_cp' && (
+            {project.hasCashPayment && (
               <div>
                 <div className="stat-label">Cash Payments</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 500, color: 'var(--color-success)' }}>
-                  {formatCurrency(financials.feesPayments)}
+                <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-success)', fontFamily: 'Cormorant Garamond, serif' }}>
+                  {formatCurrency(financials.cashPayments)}
                 </div>
               </div>
             )}
+            <div>
+              <div className="stat-label">Outstanding</div>
+              <div style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: 400, 
+                fontFamily: 'Cormorant Garamond, serif',
+                color: financials.totalProjectValue - financials.totalInflows > 0 ? 'var(--color-warning)' : 'var(--color-success)'
+              }}>
+                {formatCurrency(Math.max(0, financials.totalProjectValue - financials.totalInflows))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
         {/* Payments (Inflows) */}
         <div className="card">
           <div className="card-header">
-            <h3 className="card-title">Client Payments (Inflows)</h3>
+            <h3 className="card-title">Payments Received</h3>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowPaymentModal(true)}>
               <Plus size={16} /> Add Payment
             </button>
@@ -440,7 +559,7 @@ const ProjectDetail = () => {
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Stage</th>
+                    <th>Valuation</th>
                     <th>Type</th>
                     <th>Amount</th>
                     <th></th>
@@ -449,29 +568,32 @@ const ProjectDetail = () => {
                 <tbody>
                   {project.payments
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .map(payment => (
-                      <tr key={payment.id}>
-                        <td>{formatDate(payment.date)}</td>
-                        <td style={{ textTransform: 'capitalize' }}>{payment.stage}</td>
-                        <td>
-                          <span className={`badge ${payment.type === 'fees' ? 'badge-success' : 'badge-neutral'}`}>
-                            {payment.type === 'fees' ? 'Cash' : 'Account'}
-                          </span>
-                        </td>
-                        <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
-                          +{formatCurrency(payment.amount)}
-                        </td>
-                        <td>
-                          <button 
-                            className="btn btn-ghost btn-sm" 
-                            onClick={() => handleDeletePayment(payment.id)}
-                            style={{ padding: '0.25rem' }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    .map(payment => {
+                      const valuation = project.valuations.find(v => v.id === payment.valuationId);
+                      return (
+                        <tr key={payment.id}>
+                          <td>{formatDate(payment.date)}</td>
+                          <td>{valuation?.name || '-'}</td>
+                          <td>
+                            <span className={`badge ${payment.type === 'cash' ? 'badge-success' : 'badge-neutral'}`}>
+                              {payment.type === 'cash' ? 'Cash' : 'Account'}
+                            </span>
+                          </td>
+                          <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
+                            +{formatCurrency(payment.amount)}
+                          </td>
+                          <td>
+                            <button 
+                              className="btn btn-ghost btn-sm" 
+                              onClick={() => handleDeletePayment(payment.id)}
+                              style={{ padding: '0.25rem' }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -487,7 +609,7 @@ const ProjectDetail = () => {
         {/* Supplier Costs (Outflows) */}
         <div className="card">
           <div className="card-header">
-            <h3 className="card-title">Supplier Costs (Outflows)</h3>
+            <h3 className="card-title">Supplier Costs</h3>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowCostModal(true)}>
               <Plus size={16} /> Add Cost
             </button>
@@ -558,6 +680,153 @@ const ProjectDetail = () => {
         </div>
       )}
       
+      {/* Add Valuation Modal */}
+      {showValuationModal && (
+        <div className="modal-overlay" onClick={() => { setShowValuationModal(false); setEditingValuation(null); }}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">{editingValuation ? 'Edit Valuation' : 'Add Valuation'}</h2>
+              <button className="modal-close" onClick={() => { setShowValuationModal(false); setEditingValuation(null); }}>✕</button>
+            </div>
+            <form onSubmit={handleAddValuation}>
+              <div className="modal-body">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Valuation Name</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g., V1 - Deposit"
+                      value={newValuation.name}
+                      onChange={(e) => setNewValuation({ ...newValuation, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={newValuation.date}
+                      onChange={(e) => setNewValuation({ ...newValuation, date: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Grand Total (£) - Ex VAT</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="0.00"
+                    value={newValuation.grandTotal}
+                    onChange={(e) => setNewValuation({ ...newValuation, grandTotal: e.target.value })}
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                    Total value of goods/services for this valuation
+                  </small>
+                </div>
+                
+                {project.hasCashPayment && (
+                  <div className="form-group">
+                    <label className="form-label">Fees / Cash (£) - No VAT</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      placeholder="0.00"
+                      value={newValuation.fees}
+                      onChange={(e) => setNewValuation({ ...newValuation, fees: e.target.value })}
+                      min="0"
+                      step="0.01"
+                    />
+                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                      Cash portion - will be subtracted from VATable amount
+                    </small>
+                  </div>
+                )}
+                
+                <div className="form-group">
+                  <label className="form-label">Omissions (£)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="0.00"
+                    value={newValuation.omissions}
+                    onChange={(e) => setNewValuation({ ...newValuation, omissions: e.target.value })}
+                    min="0"
+                    step="0.01"
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                    Cancelled items - enter as positive number
+                  </small>
+                </div>
+                
+                {/* Preview */}
+                {(parseFloat(newValuation.grandTotal) > 0) && (
+                  <div style={{ 
+                    padding: '1rem', 
+                    background: 'var(--color-light-gray)', 
+                    borderRadius: 'var(--radius-md)',
+                    marginTop: '1rem'
+                  }}>
+                    <div className="stat-label" style={{ marginBottom: '0.75rem' }}>Preview</div>
+                    {(() => {
+                      const grandTotal = parseFloat(newValuation.grandTotal) || 0;
+                      const fees = project.hasCashPayment ? (parseFloat(newValuation.fees) || 0) : 0;
+                      const omissions = parseFloat(newValuation.omissions) || 0;
+                      const subtotal = grandTotal - fees - omissions;
+                      const vat = subtotal * VAT_RATE;
+                      const totalIncVat = subtotal + vat;
+                      
+                      return (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontSize: '0.9rem' }}>
+                          <div>Grand Total:</div><div style={{ textAlign: 'right' }}>{formatCurrency(grandTotal)}</div>
+                          {project.hasCashPayment && fees > 0 && (
+                            <><div>Fees (Cash):</div><div style={{ textAlign: 'right', color: 'var(--color-success)' }}>-{formatCurrency(fees)}</div></>
+                          )}
+                          {omissions > 0 && (
+                            <><div>Omissions:</div><div style={{ textAlign: 'right', color: 'var(--color-error)' }}>-{formatCurrency(omissions)}</div></>
+                          )}
+                          <div>Subtotal:</div><div style={{ textAlign: 'right' }}>{formatCurrency(subtotal)}</div>
+                          <div>VAT (20%):</div><div style={{ textAlign: 'right' }}>{formatCurrency(vat)}</div>
+                          <div style={{ fontWeight: 600 }}>Total Inc VAT:</div><div style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(totalIncVat)}</div>
+                          {project.hasCashPayment && fees > 0 && (
+                            <><div style={{ fontWeight: 600 }}>+ Cash:</div><div style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-success)' }}>{formatCurrency(fees)}</div></>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+                
+                <div className="form-group mb-0" style={{ marginTop: '1rem' }}>
+                  <label className="form-label">Notes (Optional)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newValuation.notes}
+                    onChange={(e) => setNewValuation({ ...newValuation, notes: e.target.value })}
+                    placeholder="Any notes for this valuation..."
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => { setShowValuationModal(false); setEditingValuation(null); }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  {editingValuation ? 'Update Valuation' : 'Add Valuation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
       {/* Add Payment Modal */}
       {showPaymentModal && (
         <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
@@ -595,15 +864,16 @@ const ProjectDetail = () => {
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Payment Stage</label>
+                    <label className="form-label">Valuation (Optional)</label>
                     <select
                       className="form-select"
-                      value={newPayment.stage}
-                      onChange={(e) => setNewPayment({ ...newPayment, stage: e.target.value as Payment['stage'] })}
+                      value={newPayment.valuationId}
+                      onChange={(e) => setNewPayment({ ...newPayment, valuationId: e.target.value })}
                     >
-                      <option value="upfront">Upfront (20%)</option>
-                      <option value="production">Production (70%)</option>
-                      <option value="delivery">Delivery (10%)</option>
+                      <option value="">-- Select Valuation --</option>
+                      {project.valuations.map(v => (
+                        <option key={v.id} value={v.id}>{v.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="form-group">
@@ -614,8 +884,8 @@ const ProjectDetail = () => {
                       onChange={(e) => setNewPayment({ ...newPayment, type: e.target.value as Payment['type'] })}
                     >
                       <option value="account">Account</option>
-                      {project.paymentType === 'account_cp' && (
-                        <option value="fees">Cash</option>
+                      {project.hasCashPayment && (
+                        <option value="cash">Cash</option>
                       )}
                     </select>
                   </div>

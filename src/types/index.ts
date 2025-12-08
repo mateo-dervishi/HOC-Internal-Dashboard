@@ -1,11 +1,28 @@
-export type PaymentType = 'full_account' | 'account_cp';
+// Valuation - represents a billing milestone (V1, V2, V3, etc.)
+export interface Valuation {
+  id: string;
+  name: string;              // e.g., "V1 - Deposit", "V2 - Production"
+  date: string;
+  
+  // Values for this valuation
+  grandTotal: number;        // Total goods value for this valuation (ex VAT)
+  fees: number;              // Cash/Fees portion (non-VAT) - only if CP enabled
+  omissions: number;         // Deductions (enter as positive, will be subtracted)
+  
+  // Calculated
+  // subtotal = grandTotal - fees - omissions
+  // vat = subtotal * 0.2
+  // totalIncVat = subtotal + vat
+  
+  notes?: string;
+}
 
 export interface Payment {
   id: string;
   date: string;
   amount: number;
-  stage: 'upfront' | 'production' | 'delivery';
-  type: 'account' | 'fees';  // 'fees' = cash (non-VATable)
+  valuationId?: string;      // Link to which valuation this payment is for
+  type: 'account' | 'cash';  // Account (VATable) or Cash (non-VAT)
   description?: string;
 }
 
@@ -15,28 +32,38 @@ export interface SupplierCost {
   amount: number;
   supplier: string;
   description?: string;
-  includesVat?: boolean;
 }
 
 export interface Project {
   id: string;
-  code: string;           // e.g., "P39"
-  clientName: string;     // e.g., "Lydia"
-  totalValue: number;     // Total project value (user enters this)
-  paymentType: PaymentType;
+  code: string;              // e.g., "P39", "2 Park Crescent"
+  clientName: string;
+  address?: string;
+  
+  // CP (Cash Payment) toggle
+  hasCashPayment: boolean;   // If true, project has cash/fees component
+  
+  // Data
+  valuations: Valuation[];
   payments: Payment[];
   supplierCosts: SupplierCost[];
+  
   createdAt: string;
   status: 'active' | 'completed' | 'on_hold';
   notes?: string;
 }
+
+// Operational Costs - Fixed vs Variable
+export type CostType = 'fixed' | 'variable';
 
 export interface OperationalCost {
   id: string;
   date: string;
   amount: number;
   category: string;
+  costType: CostType;        // Fixed or Variable
   description?: string;
+  isRecurring?: boolean;     // For fixed costs that repeat monthly
 }
 
 export interface DashboardState {
@@ -47,82 +74,54 @@ export interface DashboardState {
 // VAT rate
 export const VAT_RATE = 0.20;
 
-// Helper to calculate project value breakdown based on payment type
-// Full Account: 100% goes through account (VATable)
-// Account/CP: 60% account (VATable), 40% fees/cash (non-VATable)
-export const calculateProjectBreakdown = (totalValue: number, paymentType: PaymentType) => {
-  if (paymentType === 'account_cp') {
-    const accountPortion = totalValue * 0.6;  // 60% account
-    const feesPortion = totalValue * 0.4;     // 40% cash/fees
-    const vatOnAccount = accountPortion * VAT_RATE;
-    
-    return {
-      accountExVat: accountPortion,
-      feesTotal: feesPortion,
-      vatAmount: vatOnAccount,
-      totalIncVat: accountPortion + vatOnAccount + feesPortion,
-    };
-  }
-  
-  // Full account - everything is VATable
-  const vatAmount = totalValue * VAT_RATE;
-  return {
-    accountExVat: totalValue,
-    feesTotal: 0,
-    vatAmount,
-    totalIncVat: totalValue + vatAmount,
-  };
-};
-
-// Helper to calculate expected payments at each stage (20/70/10)
-export const calculateExpectedPayments = (
-  totalValue: number,
-  paymentType: PaymentType
-): {
-  upfront: { account: number; fees: number; accountVat: number };
-  production: { account: number; fees: number; accountVat: number };
-  delivery: { account: number; fees: number; accountVat: number };
-  totals: { account: number; fees: number; vat: number; total: number };
-} => {
-  const breakdown = calculateProjectBreakdown(totalValue, paymentType);
+// Helper to calculate valuation totals
+export const calculateValuationTotals = (valuation: Valuation, hasCashPayment: boolean) => {
+  const fees = hasCashPayment ? valuation.fees : 0;
+  const subtotal = valuation.grandTotal - fees - valuation.omissions;
+  const vat = subtotal * VAT_RATE;
+  const totalIncVat = subtotal + vat;
   
   return {
-    upfront: {
-      account: breakdown.accountExVat * 0.2,
-      fees: breakdown.feesTotal * 0.2,
-      accountVat: breakdown.vatAmount * 0.2,
-    },
-    production: {
-      account: breakdown.accountExVat * 0.7,
-      fees: breakdown.feesTotal * 0.7,
-      accountVat: breakdown.vatAmount * 0.7,
-    },
-    delivery: {
-      account: breakdown.accountExVat * 0.1,
-      fees: breakdown.feesTotal * 0.1,
-      accountVat: breakdown.vatAmount * 0.1,
-    },
-    totals: {
-      account: breakdown.accountExVat + breakdown.vatAmount,
-      fees: breakdown.feesTotal,
-      vat: breakdown.vatAmount,
-      total: breakdown.totalIncVat,
-    },
+    grandTotal: valuation.grandTotal,
+    fees,
+    omissions: valuation.omissions,
+    subtotal,
+    vat,
+    totalIncVat,
+    totalWithFees: totalIncVat + fees,  // Total client pays for this valuation
   };
 };
 
 // Helper to calculate project financials
 export const calculateProjectFinancials = (project: Project) => {
-  const breakdown = calculateProjectBreakdown(project.totalValue, project.paymentType);
+  // Sum all valuations
+  let totalGrandTotal = 0;
+  let totalFees = 0;
+  let totalOmissions = 0;
+  let totalSubtotal = 0;
+  let totalVat = 0;
+  let totalIncVat = 0;
+  
+  project.valuations.forEach(v => {
+    const calc = calculateValuationTotals(v, project.hasCashPayment);
+    totalGrandTotal += calc.grandTotal;
+    totalFees += calc.fees;
+    totalOmissions += calc.omissions;
+    totalSubtotal += calc.subtotal;
+    totalVat += calc.vat;
+    totalIncVat += calc.totalIncVat;
+  });
+  
+  const totalProjectValue = totalIncVat + totalFees;
   
   // Payments received
   const accountPayments = project.payments
     .filter(p => p.type === 'account')
     .reduce((sum, p) => sum + p.amount, 0);
-  const feesPayments = project.payments
-    .filter(p => p.type === 'fees')
+  const cashPayments = project.payments
+    .filter(p => p.type === 'cash')
     .reduce((sum, p) => sum + p.amount, 0);
-  const totalInflows = accountPayments + feesPayments;
+  const totalInflows = accountPayments + cashPayments;
   
   // Supplier costs
   const totalSupplierCosts = project.supplierCosts.reduce((sum, c) => sum + c.amount, 0);
@@ -132,22 +131,49 @@ export const calculateProjectFinancials = (project: Project) => {
   const profitMargin = totalInflows > 0 ? (grossProfit / totalInflows) * 100 : 0;
   
   return {
-    // Value breakdown
-    accountExVat: breakdown.accountExVat,
-    feesTotal: breakdown.feesTotal,
-    vatAmount: breakdown.vatAmount,
-    totalProjectValue: breakdown.totalIncVat,
+    // Valuation totals
+    totalGrandTotal,
+    totalFees,
+    totalOmissions,
+    totalSubtotal,
+    totalVat,
+    totalIncVat,
+    totalProjectValue,
     
-    // Payments received
+    // Payments
     accountPayments,
-    feesPayments,
+    cashPayments,
     totalInflows,
     
-    // Costs
+    // Costs & Profit
     totalSupplierCosts,
-    
-    // Profit
     grossProfit,
     profitMargin,
   };
 };
+
+// Common fixed cost categories
+export const FIXED_COST_CATEGORIES = [
+  'Warehouse Rent',
+  'Office Rent',
+  'Insurance',
+  'Software Subscriptions',
+  'Utilities',
+  'Equipment Lease',
+  'Storage',
+  'Other Fixed',
+];
+
+// Common variable cost categories
+export const VARIABLE_COST_CATEGORIES = [
+  'Salaries',
+  'Contractor Payments',
+  'Commissions',
+  'Transport/Fuel',
+  'Marketing',
+  'Office Supplies',
+  'Professional Services',
+  'Travel',
+  'Entertainment',
+  'Other Variable',
+];

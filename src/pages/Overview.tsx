@@ -15,7 +15,12 @@ const Overview = () => {
   const totalProjectValue = projectFinancials.reduce((sum, p) => sum + p.financials.totalProjectValue, 0);
   const totalInflows = projectFinancials.reduce((sum, p) => sum + p.financials.totalInflows, 0);
   const totalSupplierCosts = projectFinancials.reduce((sum, p) => sum + p.financials.totalSupplierCosts, 0);
-  const totalOperationalCosts = state.operationalCosts.reduce((sum, c) => sum + c.amount, 0);
+  
+  // Operational costs
+  const fixedCosts = state.operationalCosts.filter(c => c.costType === 'fixed').reduce((sum, c) => sum + c.amount, 0);
+  const variableCosts = state.operationalCosts.filter(c => c.costType === 'variable').reduce((sum, c) => sum + c.amount, 0);
+  const totalOperationalCosts = fixedCosts + variableCosts;
+  
   const grossProfit = totalInflows - totalSupplierCosts;
   const netProfit = grossProfit - totalOperationalCosts;
   
@@ -48,7 +53,7 @@ const Overview = () => {
           <div className="stat-label">Total Project Value</div>
           <div className="stat-value">{formatCurrency(totalProjectValue)}</div>
           <div className="stat-change">
-            {state.projects.length} total projects
+            {state.projects.length} project{state.projects.length !== 1 ? 's' : ''}
           </div>
         </div>
         
@@ -132,8 +137,12 @@ const Overview = () => {
               <span className="project-stat-value">{formatCurrency(totalSupplierCosts)}</span>
             </div>
             <div className="project-stat">
-              <span className="project-stat-label">Operational Costs</span>
-              <span className="project-stat-value">{formatCurrency(totalOperationalCosts)}</span>
+              <span className="project-stat-label">Fixed Costs</span>
+              <span className="project-stat-value">{formatCurrency(fixedCosts)}</span>
+            </div>
+            <div className="project-stat">
+              <span className="project-stat-label">Variable Costs</span>
+              <span className="project-stat-value">{formatCurrency(variableCosts)}</span>
             </div>
             <div className="project-stat">
               <span className="project-stat-label">Collection Rate</span>
@@ -164,7 +173,7 @@ const Overview = () => {
                 <tr>
                   <th>Project</th>
                   <th>Client</th>
-                  <th>Value</th>
+                  <th>Valuations</th>
                   <th>Received</th>
                   <th>Profit</th>
                   <th>Status</th>
@@ -185,7 +194,7 @@ const Overview = () => {
                         </Link>
                       </td>
                       <td>{project.clientName}</td>
-                      <td>{formatCurrency(financials.totalProjectValue)}</td>
+                      <td>{project.valuations.length}</td>
                       <td>{formatCurrency(financials.totalInflows)}</td>
                       <td className={financials.grossProfit >= 0 ? 'project-stat-value positive' : 'project-stat-value negative'}>
                         {formatCurrency(financials.grossProfit)}

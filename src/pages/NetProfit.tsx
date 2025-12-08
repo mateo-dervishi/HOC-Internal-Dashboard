@@ -1,19 +1,22 @@
 import { useState } from 'react';
-import { Plus, Trash2, TrendingUp, TrendingDown, PoundSterling } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, TrendingDown, PoundSterling, Building2, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDashboard } from '../context/DashboardContext';
-import { calculateProjectFinancials } from '../types';
-import type { OperationalCost } from '../types';
+import { calculateProjectFinancials, FIXED_COST_CATEGORIES, VARIABLE_COST_CATEGORIES } from '../types';
+import type { OperationalCost, CostType } from '../types';
 
 const NetProfit = () => {
   const { state, dispatch } = useDashboard();
   const [showModal, setShowModal] = useState(false);
+  const [costTypeFilter, setCostTypeFilter] = useState<'all' | CostType>('all');
   
   const [newCost, setNewCost] = useState({
     amount: '',
     category: '',
+    costType: 'fixed' as CostType,
     date: new Date().toISOString().split('T')[0],
     description: '',
+    isRecurring: false,
   });
   
   const formatCurrency = (amount: number) => {
@@ -46,15 +49,27 @@ const NetProfit = () => {
   const totalInflows = projectProfits.reduce((sum, p) => sum + p.totalInflows, 0);
   const totalSupplierCosts = projectProfits.reduce((sum, p) => sum + p.totalSupplierCosts, 0);
   const totalAccountPayments = projectProfits.reduce((sum, p) => sum + p.accountPayments, 0);
-  const totalFeesPayments = projectProfits.reduce((sum, p) => sum + p.feesPayments, 0);
-  const totalOperationalCosts = state.operationalCosts.reduce((sum, c) => sum + c.amount, 0);
+  const totalCashPayments = projectProfits.reduce((sum, p) => sum + p.cashPayments, 0);
+  
+  // Operational costs breakdown
+  const fixedCosts = state.operationalCosts.filter(c => c.costType === 'fixed');
+  const variableCosts = state.operationalCosts.filter(c => c.costType === 'variable');
+  const totalFixedCosts = fixedCosts.reduce((sum, c) => sum + c.amount, 0);
+  const totalVariableCosts = variableCosts.reduce((sum, c) => sum + c.amount, 0);
+  const totalOperationalCosts = totalFixedCosts + totalVariableCosts;
+  
   const netProfit = totalGrossProfit - totalOperationalCosts;
   
-  // Group operational costs by category
-  const costsByCategory = state.operationalCosts.reduce((acc, cost) => {
-    acc[cost.category] = (acc[cost.category] || 0) + cost.amount;
-    return acc;
-  }, {} as Record<string, number>);
+  // Group costs by category
+  const costsByCategory = (costs: OperationalCost[]) => {
+    return costs.reduce((acc, cost) => {
+      acc[cost.category] = (acc[cost.category] || 0) + cost.amount;
+      return acc;
+    }, {} as Record<string, number>);
+  };
+  
+  const fixedByCategory = costsByCategory(fixedCosts);
+  const variableByCategory = costsByCategory(variableCosts);
   
   const handleAddCost = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +78,9 @@ const NetProfit = () => {
       date: newCost.date,
       amount: parseFloat(newCost.amount) || 0,
       category: newCost.category,
+      costType: newCost.costType,
       description: newCost.description,
+      isRecurring: newCost.isRecurring,
     };
     
     dispatch({ type: 'ADD_OPERATIONAL_COST', payload: cost });
@@ -71,30 +88,23 @@ const NetProfit = () => {
     setNewCost({
       amount: '',
       category: '',
+      costType: 'fixed',
       date: new Date().toISOString().split('T')[0],
       description: '',
+      isRecurring: false,
     });
   };
   
   const handleDeleteCost = (costId: string) => {
-    if (confirm('Are you sure you want to delete this operational cost?')) {
+    if (confirm('Are you sure you want to delete this cost?')) {
       dispatch({ type: 'DELETE_OPERATIONAL_COST', payload: costId });
     }
   };
   
-  // Common operational cost categories
-  const commonCategories = [
-    'Rent',
-    'Utilities',
-    'Salaries',
-    'Marketing',
-    'Insurance',
-    'Transport',
-    'Office Supplies',
-    'Software',
-    'Professional Services',
-    'Miscellaneous',
-  ];
+  // Filter costs for display
+  const displayedCosts = costTypeFilter === 'all' 
+    ? state.operationalCosts 
+    : state.operationalCosts.filter(c => c.costType === costTypeFilter);
 
   return (
     <div>
@@ -115,7 +125,7 @@ const NetProfit = () => {
         </div>
         
         <div className="stat-card warning">
-          <div className="stat-label">Total Supplier Costs</div>
+          <div className="stat-label">Supplier Costs</div>
           <div className="stat-value">{formatCurrency(totalSupplierCosts)}</div>
           <div className="stat-change">
             Project-level costs
@@ -123,7 +133,7 @@ const NetProfit = () => {
         </div>
         
         <div className="stat-card">
-          <div className="stat-label">Gross Profit (All Projects)</div>
+          <div className="stat-label">Gross Profit</div>
           <div className="stat-value">{formatCurrency(totalGrossProfit)}</div>
           <div className="stat-change">
             Before operational costs
@@ -144,34 +154,103 @@ const NetProfit = () => {
       </div>
       
       {/* Payment Type Breakdown */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h3 className="card-title">Payment Type Breakdown</h3>
+      {(totalAccountPayments > 0 || totalCashPayments > 0) && (
+        <div className="card mb-4">
+          <div className="card-header">
+            <h3 className="card-title">Payment Breakdown</h3>
+          </div>
+          <div className="card-body" style={{ display: 'flex', gap: '3rem' }}>
+            <div>
+              <div className="stat-label">Account Payments</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+                {formatCurrency(totalAccountPayments)}
+              </div>
+            </div>
+            <div>
+              <div className="stat-label">Cash Payments</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-success)', fontFamily: 'Cormorant Garamond, serif' }}>
+                {formatCurrency(totalCashPayments)}
+              </div>
+            </div>
+            <div>
+              <div className="stat-label">Total Received</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+                {formatCurrency(totalInflows)}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="card-body" style={{ display: 'flex', gap: '3rem' }}>
-          <div>
-            <div className="stat-label">Account Payments (VATable)</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
-              {formatCurrency(totalAccountPayments)}
-            </div>
+      )}
+      
+      {/* Operational Costs Summary Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        {/* Fixed Costs Card */}
+        <div className="card">
+          <div className="card-header" style={{ background: 'var(--color-light-gray)' }}>
+            <h3 className="card-title">
+              <Building2 size={20} style={{ marginRight: 8, opacity: 0.7 }} />
+              Fixed Costs
+            </h3>
+            <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{formatCurrency(totalFixedCosts)}</span>
           </div>
-          <div>
-            <div className="stat-label">Fees / Cash (Non-VAT)</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-success)', fontFamily: 'Cormorant Garamond, serif' }}>
-              {formatCurrency(totalFeesPayments)}
-            </div>
+          <div className="card-body">
+            {Object.keys(fixedByCategory).length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {Object.entries(fixedByCategory)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([category, amount]) => (
+                    <div key={category} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--color-border)' }}>
+                      <span style={{ color: 'var(--color-text-muted)' }}>{category}</span>
+                      <span style={{ fontWeight: 500 }}>{formatCurrency(amount)}</span>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                No fixed costs recorded
+              </p>
+            )}
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '1rem' }}>
+              Rent, insurance, subscriptions, etc.
+            </p>
           </div>
-          <div>
-            <div className="stat-label">Total Received</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
-              {formatCurrency(totalInflows)}
-            </div>
+        </div>
+        
+        {/* Variable Costs Card */}
+        <div className="card">
+          <div className="card-header" style={{ background: 'var(--color-light-gray)' }}>
+            <h3 className="card-title">
+              <Users size={20} style={{ marginRight: 8, opacity: 0.7 }} />
+              Variable Costs
+            </h3>
+            <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{formatCurrency(totalVariableCosts)}</span>
+          </div>
+          <div className="card-body">
+            {Object.keys(variableByCategory).length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {Object.entries(variableByCategory)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([category, amount]) => (
+                    <div key={category} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--color-border)' }}>
+                      <span style={{ color: 'var(--color-text-muted)' }}>{category}</span>
+                      <span style={{ fontWeight: 500 }}>{formatCurrency(amount)}</span>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                No variable costs recorded
+              </p>
+            )}
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '1rem' }}>
+              Salaries, contractors, transport, etc.
+            </p>
           </div>
         </div>
       </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        {/* Project Profits Breakdown */}
+        {/* Project Profits */}
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">
@@ -249,62 +328,57 @@ const NetProfit = () => {
           )}
         </div>
         
-        {/* Operational Costs */}
+        {/* Operational Costs List */}
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">Operational Costs</h3>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowModal(true)}>
-              <Plus size={16} /> Add Cost
-            </button>
-          </div>
-          
-          {/* Cost by Category Summary */}
-          {Object.keys(costsByCategory).length > 0 && (
-            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-border)' }}>
-              <div className="stat-label" style={{ marginBottom: '1rem' }}>By Category</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                {Object.entries(costsByCategory)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([category, amount]) => (
-                    <div 
-                      key={category}
-                      style={{
-                        background: 'var(--color-light-gray)',
-                        padding: '0.5rem 1rem',
-                        borderRadius: 'var(--radius-md)',
-                        fontSize: '0.85rem',
-                      }}
-                    >
-                      <span style={{ color: 'var(--color-text-muted)' }}>{category}:</span>{' '}
-                      <span style={{ fontWeight: 500, color: 'var(--color-black)' }}>
-                        {formatCurrency(amount)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <select
+                className="form-select"
+                value={costTypeFilter}
+                onChange={(e) => setCostTypeFilter(e.target.value as 'all' | CostType)}
+                style={{ width: 'auto', padding: '0.5rem' }}
+              >
+                <option value="all">All</option>
+                <option value="fixed">Fixed</option>
+                <option value="variable">Variable</option>
+              </select>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowModal(true)}>
+                <Plus size={16} /> Add
+              </button>
             </div>
-          )}
-          
-          {state.operationalCosts.length > 0 ? (
+          </div>
+          {displayedCosts.length > 0 ? (
             <div className="table-container">
               <table className="table">
                 <thead>
                   <tr>
                     <th>Date</th>
                     <th>Category</th>
-                    <th>Description</th>
+                    <th>Type</th>
                     <th>Amount</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {state.operationalCosts
+                  {displayedCosts
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .map(cost => (
                       <tr key={cost.id}>
                         <td>{formatDate(cost.date)}</td>
-                        <td>{cost.category}</td>
-                        <td style={{ color: 'var(--color-text-muted)' }}>{cost.description || '-'}</td>
+                        <td>
+                          {cost.category}
+                          {cost.description && (
+                            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                              {cost.description}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`badge ${cost.costType === 'fixed' ? 'badge-neutral' : 'badge-warning'}`}>
+                            {cost.costType}
+                          </span>
+                        </td>
                         <td style={{ fontWeight: 500, color: 'var(--color-error)' }}>
                           -{formatCurrency(cost.amount)}
                         </td>
@@ -320,15 +394,6 @@ const NetProfit = () => {
                       </tr>
                     ))}
                 </tbody>
-                <tfoot>
-                  <tr style={{ background: 'var(--color-light-gray)' }}>
-                    <td colSpan={3}><strong>Total Operational Costs</strong></td>
-                    <td style={{ fontWeight: 600, color: 'var(--color-error)' }}>
-                      -{formatCurrency(totalOperationalCosts)}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
           ) : (
@@ -348,26 +413,30 @@ const NetProfit = () => {
             ? 'var(--color-success-light)'
             : 'var(--color-error-light)',
         }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem', textAlign: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', textAlign: 'center', alignItems: 'center' }}>
             <div>
               <div className="stat-label">Gross Profit</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--color-black)', fontFamily: 'Cormorant Garamond, serif' }}>
                 {formatCurrency(totalGrossProfit)}
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: 'var(--color-text-muted)' }}>
-              −
+            <div style={{ fontSize: '1.5rem', color: 'var(--color-text-muted)' }}>−</div>
+            <div>
+              <div className="stat-label">Fixed Costs</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--color-error)', fontFamily: 'Cormorant Garamond, serif' }}>
+                {formatCurrency(totalFixedCosts)}
+              </div>
             </div>
             <div>
-              <div className="stat-label">Operational Costs</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-error)', fontFamily: 'Cormorant Garamond, serif' }}>
-                {formatCurrency(totalOperationalCosts)}
+              <div className="stat-label">Variable Costs</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--color-error)', fontFamily: 'Cormorant Garamond, serif' }}>
+                {formatCurrency(totalVariableCosts)}
               </div>
             </div>
             <div>
               <div className="stat-label">Net Profit</div>
               <div style={{ 
-                fontSize: '1.75rem', 
+                fontSize: '1.5rem', 
                 fontWeight: 400, 
                 fontFamily: 'Cormorant Garamond, serif',
                 color: netProfit >= 0 ? 'var(--color-success)' : 'var(--color-error)'
@@ -389,6 +458,58 @@ const NetProfit = () => {
             </div>
             <form onSubmit={handleAddCost}>
               <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Cost Type</label>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <label style={{ 
+                      flex: 1, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.75rem',
+                      padding: '1rem',
+                      border: `2px solid ${newCost.costType === 'fixed' ? 'var(--color-black)' : 'var(--color-border)'}`,
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
+                      background: newCost.costType === 'fixed' ? 'var(--color-light-gray)' : 'white'
+                    }}>
+                      <input
+                        type="radio"
+                        name="costType"
+                        value="fixed"
+                        checked={newCost.costType === 'fixed'}
+                        onChange={(e) => setNewCost({ ...newCost, costType: e.target.value as CostType, category: '' })}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 500 }}>Fixed</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Rent, insurance, etc.</div>
+                      </div>
+                    </label>
+                    <label style={{ 
+                      flex: 1, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.75rem',
+                      padding: '1rem',
+                      border: `2px solid ${newCost.costType === 'variable' ? 'var(--color-black)' : 'var(--color-border)'}`,
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
+                      background: newCost.costType === 'variable' ? 'var(--color-light-gray)' : 'white'
+                    }}>
+                      <input
+                        type="radio"
+                        name="costType"
+                        value="variable"
+                        checked={newCost.costType === 'variable'}
+                        onChange={(e) => setNewCost({ ...newCost, costType: e.target.value as CostType, category: '' })}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 500 }}>Variable</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Salaries, transport, etc.</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Amount (£)</label>
@@ -423,7 +544,7 @@ const NetProfit = () => {
                     required
                   >
                     <option value="">Select a category...</option>
-                    {commonCategories.map(cat => (
+                    {(newCost.costType === 'fixed' ? FIXED_COST_CATEGORIES : VARIABLE_COST_CATEGORIES).map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
@@ -436,7 +557,7 @@ const NetProfit = () => {
                     className="form-input"
                     value={newCost.description}
                     onChange={(e) => setNewCost({ ...newCost, description: e.target.value })}
-                    placeholder="e.g., December electricity bill"
+                    placeholder="e.g., December warehouse rent"
                   />
                 </div>
               </div>
