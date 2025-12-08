@@ -314,7 +314,7 @@ const ProjectDetail = () => {
                 <select
                   className="form-select"
                   value={editForm.status}
-                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value as 'active' | 'completed' | 'on_hold' })}
                 >
                   <option value="active">Active</option>
                   <option value="completed">Completed</option>
