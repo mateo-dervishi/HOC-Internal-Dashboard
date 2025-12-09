@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import type { Project, OperationalCost, DashboardState } from '../types';
+import { generateHOCOperationalCosts } from '../data/seedOperationalCosts';
 
 type Action =
   | { type: 'ADD_PROJECT'; payload: Project }
@@ -14,19 +15,28 @@ type Action =
   | { type: 'DELETE_OPERATIONAL_COST'; payload: string }
   | { type: 'LOAD_STATE'; payload: DashboardState };
 
+// Initial state with pre-loaded HOC operational costs
 const initialState: DashboardState = {
   projects: [],
-  operationalCosts: [],
+  operationalCosts: generateHOCOperationalCosts(),
 };
 
 const STORAGE_KEY = 'hoc_dashboard_state';
+const DATA_VERSION_KEY = 'hoc_dashboard_data_version';
+const CURRENT_DATA_VERSION = '2'; // Increment this to force reload of seed data
 
 const loadFromStorage = (): DashboardState => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
+    const storedVersion = localStorage.getItem(DATA_VERSION_KEY);
+    
+    // If data version mismatch or no data, return initial state with seed data
+    if (!stored || storedVersion !== CURRENT_DATA_VERSION) {
+      localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
+      return initialState;
     }
+    
+    return JSON.parse(stored);
   } catch (e) {
     console.error('Failed to load state from storage:', e);
   }
