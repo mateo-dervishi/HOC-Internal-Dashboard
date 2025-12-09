@@ -1,11 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Plus, Trash2, Edit3, Building2, Users, TrendingDown, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { Plus, Trash2, Edit3, Building2, Users, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import type { OperationalCost, CostType } from '../types';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area, PieChart, Pie, Cell
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const OperationalCosts = () => {
   const { state, dispatch } = useDashboard();
@@ -103,29 +100,26 @@ const OperationalCosts = () => {
     });
   }, [costsByMonth, selectedYear]);
   
-  // Category breakdown for pie chart
+  // Category breakdown
   const categoryBreakdown = useMemo(() => {
-    const breakdown: Record<string, number> = {};
+    const breakdown: Record<string, { amount: number; type: CostType }> = {};
     
     yearCosts.forEach(cost => {
       if (!breakdown[cost.category]) {
-        breakdown[cost.category] = 0;
+        breakdown[cost.category] = { amount: 0, type: cost.costType };
       }
-      breakdown[cost.category] += cost.amount;
+      breakdown[cost.category].amount += cost.amount;
     });
     
     return Object.entries(breakdown)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.amount - a.amount);
   }, [yearCosts]);
   
   // Totals
   const totalFixed = yearCosts.filter(c => c.costType === 'fixed').reduce((sum, c) => sum + c.amount, 0);
   const totalVariable = yearCosts.filter(c => c.costType === 'variable').reduce((sum, c) => sum + c.amount, 0);
   const totalYear = totalFixed + totalVariable;
-  
-  // Color palette for pie chart
-  const COLORS = ['#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#b3b3b3', '#cccccc'];
   
   const toggleMonth = (monthKey: string) => {
     const newExpanded = new Set(expandedMonths);
@@ -189,9 +183,9 @@ const OperationalCosts = () => {
   };
   
   const getMonthName = (monthKey: string) => {
-    const [year, month] = monthKey.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const [, month] = monthKey.split('-');
+    const date = new Date(2024, parseInt(month) - 1);
+    return date.toLocaleString('default', { month: 'long' });
   };
   
   const getMonthTotal = (costs: OperationalCost[]) => {
@@ -199,303 +193,333 @@ const OperationalCosts = () => {
   };
 
   return (
-    <div>
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <div style={{ maxWidth: '1200px' }}>
+      {/* Header */}
+      <header style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '2.5rem'
+      }}>
         <div>
-          <h1 className="page-title">Operational Costs</h1>
-          <p className="page-subtitle">Track and manage business expenses</p>
+          <h1 style={{ 
+            fontSize: '1.75rem', 
+            fontWeight: 300, 
+            letterSpacing: '-0.02em',
+            marginBottom: '0.25rem'
+          }}>
+            Operational Costs
+          </h1>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+            {selectedYear} Overview
+          </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          <Plus size={18} />
-          Add Cost
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Year Tabs */}
+          <div style={{ 
+            display: 'flex', 
+            background: 'var(--color-light-gray)', 
+            borderRadius: '8px',
+            padding: '4px'
+          }}>
+            {availableYears.map(year => (
+              <button
+                key={year}
+                onClick={() => setSelectedYear(year)}
+                style={{ 
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.85rem',
+                  fontWeight: selectedYear === year ? 500 : 400,
+                  background: selectedYear === year ? 'white' : 'transparent',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  boxShadow: selectedYear === year ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                {year}
+              </button>
+            ))}
+          </div>
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+            <Plus size={18} />
+            Add Cost
+          </button>
+        </div>
       </header>
       
-      {/* Year Selector */}
-      <div style={{ marginBottom: '2rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginRight: '0.5rem' }}>Year:</span>
-        {availableYears.map(year => (
-          <button
-            key={year}
-            className={`btn ${selectedYear === year ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setSelectedYear(year)}
-            style={{ padding: '0.5rem 1rem' }}
-          >
-            {year}
-          </button>
-        ))}
-      </div>
-      
-      {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div className="card" style={{ background: 'var(--color-black)', color: 'var(--color-white)' }}>
-          <div className="card-body" style={{ textAlign: 'center', padding: '2rem' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.7, marginBottom: '0.5rem' }}>
-              Total {selectedYear}
-            </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 300 }}>
-              {formatCurrency(totalYear)}
-            </div>
+      {/* Stats Row */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 1fr 1fr', 
+        gap: '1px',
+        background: 'var(--color-border)',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        marginBottom: '2rem'
+      }}>
+        <div style={{ background: 'var(--color-black)', padding: '1.5rem 2rem', color: 'white' }}>
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1.5px', opacity: 0.6, marginBottom: '0.5rem' }}>
+            Total Expenses
+          </div>
+          <div style={{ fontSize: '2rem', fontWeight: 300, letterSpacing: '-0.02em' }}>
+            {formatCurrency(totalYear)}
           </div>
         </div>
+        <div style={{ background: 'white', padding: '1.5rem 2rem' }}>
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--color-text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Building2 size={12} /> Fixed
+          </div>
+          <div style={{ fontSize: '2rem', fontWeight: 300, letterSpacing: '-0.02em' }}>
+            {formatCurrency(totalFixed)}
+          </div>
+        </div>
+        <div style={{ background: 'white', padding: '1.5rem 2rem' }}>
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--color-text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Users size={12} /> Variable
+          </div>
+          <div style={{ fontSize: '2rem', fontWeight: 300, letterSpacing: '-0.02em' }}>
+            {formatCurrency(totalVariable)}
+          </div>
+        </div>
+      </div>
+      
+      {/* Main Content Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem' }}>
         
-        <div className="card">
-          <div className="card-body" style={{ textAlign: 'center', padding: '2rem' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--color-text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-              <Building2 size={14} /> Fixed Costs
-            </div>
-            <div style={{ fontSize: '2rem', fontWeight: 300 }}>
-              {formatCurrency(totalFixed)}
-            </div>
-          </div>
-        </div>
-        
-        <div className="card">
-          <div className="card-body" style={{ textAlign: 'center', padding: '2rem' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--color-text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-              <Users size={14} /> Variable Costs
-            </div>
-            <div style={{ fontSize: '2rem', fontWeight: 300 }}>
-              {formatCurrency(totalVariable)}
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Charts Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-        {/* Monthly Bar Chart */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">
-              <TrendingDown size={18} style={{ marginRight: '0.5rem', opacity: 0.7 }} />
-              Monthly Expenses
-            </h3>
-          </div>
-          <div className="card-body" style={{ height: '350px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis 
-                  tick={{ fontSize: 12 }} 
-                  tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
-                />
-                <Tooltip 
-                  formatter={(value: number) => formatCurrencyFull(value)}
-                  labelStyle={{ fontWeight: 600 }}
-                  contentStyle={{ 
-                    background: 'white', 
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="fixed" name="Fixed" fill="#1a1a1a" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="variable" name="Variable" fill="#666666" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
-        {/* Category Pie Chart */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">By Category</h3>
-          </div>
-          <div className="card-body" style={{ height: '350px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categoryBreakdown.slice(0, 8)}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {categoryBreakdown.slice(0, 8).map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: number) => formatCurrencyFull(value)} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ fontSize: '0.75rem', maxHeight: '100px', overflowY: 'auto' }}>
-              {categoryBreakdown.slice(0, 6).map((cat, i) => (
-                <div key={cat.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 2, background: COLORS[i] }} />
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
-                  <span style={{ color: 'var(--color-text-muted)' }}>{formatCurrency(cat.value)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Cumulative Area Chart */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h3 className="card-title">Cumulative Expenses</h3>
-        </div>
-        <div className="card-body" style={{ height: '250px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart 
-              data={monthlyChartData.map((d, i, arr) => ({
-                ...d,
-                cumulative: arr.slice(0, i + 1).reduce((sum, m) => sum + m.total, 0)
-              }))}
-              margin={{ top: 10, right: 30, left: 20, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis 
-                tick={{ fontSize: 12 }} 
-                tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
-              />
-              <Tooltip 
-                formatter={(value: number) => formatCurrencyFull(value)}
-                contentStyle={{ 
-                  background: 'white', 
-                  border: '1px solid #e0e0e0',
-                  borderRadius: '8px'
-                }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="cumulative" 
-                name="Cumulative Total"
-                stroke="#1a1a1a" 
-                fill="#1a1a1a" 
-                fillOpacity={0.1}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      
-      {/* Monthly Breakdown */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Monthly Breakdown</h3>
-        </div>
-        <div className="card-body" style={{ padding: 0 }}>
-          {Object.keys(costsByMonth)
-            .sort((a, b) => a.localeCompare(b))
-            .map(monthKey => {
-              const costs = costsByMonth[monthKey];
-              const isExpanded = expandedMonths.has(monthKey);
-              const monthTotal = getMonthTotal(costs);
-              const fixedTotal = costs.filter(c => c.costType === 'fixed').reduce((sum, c) => sum + c.amount, 0);
-              const variableTotal = costs.filter(c => c.costType === 'variable').reduce((sum, c) => sum + c.amount, 0);
-              
-              return (
-                <div key={monthKey} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                  <div 
-                    onClick={() => toggleMonth(monthKey)}
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      padding: '1rem 1.5rem',
-                      cursor: 'pointer',
-                      transition: 'background 0.15s ease',
-                      background: isExpanded ? 'var(--color-light-gray)' : 'transparent',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-light-gray)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = isExpanded ? 'var(--color-light-gray)' : 'transparent'}
-                  >
-                    {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                    <span style={{ flex: 1, marginLeft: '0.75rem', fontWeight: 500 }}>
-                      {getMonthName(monthKey)}
-                    </span>
-                    <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                        <Building2 size={14} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} />
-                        {formatCurrency(fixedTotal)}
-                      </span>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                        <Users size={14} style={{ display: 'inline', marginRight: '0.25rem', verticalAlign: 'middle' }} />
-                        {formatCurrency(variableTotal)}
-                      </span>
-                      <span style={{ fontWeight: 600, minWidth: '100px', textAlign: 'right' }}>
-                        {formatCurrency(monthTotal)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {isExpanded && (
-                    <div style={{ background: 'var(--color-off-white)', padding: '0.5rem 1.5rem 1rem' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                            <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>Date</th>
-                            <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>Category</th>
-                            <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>Description</th>
-                            <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>Type</th>
-                            <th style={{ textAlign: 'right', padding: '0.75rem 0.5rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>Amount</th>
-                            <th style={{ width: '80px', padding: '0.75rem 0.5rem' }}></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {costs.map(cost => (
-                            <tr key={cost.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                              <td style={{ padding: '0.75rem 0.5rem' }}>
-                                {new Date(cost.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                              </td>
-                              <td style={{ padding: '0.75rem 0.5rem' }}>{cost.category}</td>
-                              <td style={{ padding: '0.75rem 0.5rem', color: 'var(--color-text-muted)' }}>
-                                {cost.description || '-'}
-                              </td>
-                              <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
-                                <span style={{ 
-                                  fontSize: '0.7rem', 
-                                  padding: '0.25rem 0.5rem', 
-                                  borderRadius: '4px',
-                                  background: cost.costType === 'fixed' ? 'var(--color-black)' : 'var(--color-gray-medium)',
-                                  color: 'white',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.5px'
-                                }}>
-                                  {cost.costType}
-                                </span>
-                              </td>
-                              <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right', fontWeight: 500 }}>
-                                {formatCurrencyFull(cost.amount)}
-                              </td>
-                              <td style={{ padding: '0.75rem 0.5rem' }}>
-                                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                                  <button 
-                                    className="btn btn-icon" 
-                                    onClick={(e) => { e.stopPropagation(); handleEdit(cost); }}
-                                    style={{ padding: '0.35rem' }}
-                                  >
-                                    <Edit3 size={14} />
-                                  </button>
-                                  <button 
-                                    className="btn btn-icon" 
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(cost.id); }}
-                                    style={{ padding: '0.35rem', color: 'var(--color-error)' }}
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        {/* Left Column - Chart + Monthly List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          {Object.keys(costsByMonth).length === 0 && (
-            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-              No operational costs for {selectedYear}. Click "Add Cost" to get started.
+          {/* Monthly Chart */}
+          <div className="card">
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-border)' }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 500, margin: 0 }}>Monthly Expenses</h3>
+            </div>
+            <div style={{ padding: '1.5rem', height: '280px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fontSize: 11, fill: '#888' }} 
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 11, fill: '#888' }} 
+                    tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip 
+                    formatter={(value: number, name: string) => [formatCurrencyFull(value), name === 'fixed' ? 'Fixed' : 'Variable']}
+                    contentStyle={{ 
+                      background: 'white', 
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      fontSize: '0.85rem'
+                    }}
+                  />
+                  <Bar dataKey="fixed" stackId="a" fill="#1a1a1a" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="variable" stackId="a" fill="#888888" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ 
+              padding: '1rem 1.5rem', 
+              borderTop: '1px solid var(--color-border)',
+              display: 'flex',
+              gap: '1.5rem',
+              fontSize: '0.8rem'
+            }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ width: 12, height: 12, background: '#1a1a1a', borderRadius: 2 }} />
+                Fixed
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ width: 12, height: 12, background: '#888888', borderRadius: 2 }} />
+                Variable
+              </span>
+            </div>
+          </div>
+          
+          {/* Monthly Breakdown */}
+          <div className="card" style={{ flex: 1 }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-border)' }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 500, margin: 0 }}>Monthly Breakdown</h3>
+            </div>
+            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              {Object.keys(costsByMonth)
+                .sort((a, b) => a.localeCompare(b))
+                .map(monthKey => {
+                  const costs = costsByMonth[monthKey];
+                  const isExpanded = expandedMonths.has(monthKey);
+                  const monthTotal = getMonthTotal(costs);
+                  const fixedTotal = costs.filter(c => c.costType === 'fixed').reduce((sum, c) => sum + c.amount, 0);
+                  const variableTotal = costs.filter(c => c.costType === 'variable').reduce((sum, c) => sum + c.amount, 0);
+                  
+                  return (
+                    <div key={monthKey} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <div 
+                        onClick={() => toggleMonth(monthKey)}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          padding: '1rem 1.5rem',
+                          cursor: 'pointer',
+                          transition: 'background 0.15s ease',
+                          background: isExpanded ? 'var(--color-light-gray)' : 'transparent',
+                        }}
+                        onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.background = 'var(--color-light-gray)'; }}
+                        onMouseLeave={(e) => { if (!isExpanded) e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        {isExpanded ? <ChevronDown size={16} style={{ opacity: 0.5 }} /> : <ChevronRight size={16} style={{ opacity: 0.5 }} />}
+                        <span style={{ flex: 1, marginLeft: '0.75rem', fontWeight: 500, fontSize: '0.9rem' }}>
+                          {getMonthName(monthKey)}
+                        </span>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.85rem' }}>
+                          <span style={{ color: 'var(--color-text-muted)', minWidth: '70px', textAlign: 'right' }}>
+                            {formatCurrency(fixedTotal)}
+                          </span>
+                          <span style={{ color: 'var(--color-text-muted)', minWidth: '70px', textAlign: 'right' }}>
+                            {formatCurrency(variableTotal)}
+                          </span>
+                          <span style={{ fontWeight: 600, minWidth: '90px', textAlign: 'right' }}>
+                            {formatCurrency(monthTotal)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {isExpanded && (
+                        <div style={{ background: 'var(--color-off-white)' }}>
+                          {costs.map(cost => (
+                            <div 
+                              key={cost.id} 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                padding: '0.75rem 1.5rem 0.75rem 3rem',
+                                borderTop: '1px solid var(--color-border)',
+                                fontSize: '0.85rem'
+                              }}
+                            >
+                              <span style={{ 
+                                width: 6, 
+                                height: 6, 
+                                borderRadius: '50%', 
+                                background: cost.costType === 'fixed' ? '#1a1a1a' : '#888',
+                                marginRight: '0.75rem'
+                              }} />
+                              <span style={{ flex: 1 }}>
+                                {cost.category}
+                                {cost.description && (
+                                  <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>
+                                    — {cost.description}
+                                  </span>
+                                )}
+                              </span>
+                              <span style={{ fontWeight: 500, marginRight: '1rem' }}>
+                                {formatCurrencyFull(cost.amount)}
+                              </span>
+                              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                <button 
+                                  className="btn btn-icon" 
+                                  onClick={(e) => { e.stopPropagation(); handleEdit(cost); }}
+                                  style={{ padding: '0.25rem', opacity: 0.5 }}
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                                <button 
+                                  className="btn btn-icon" 
+                                  onClick={(e) => { e.stopPropagation(); handleDelete(cost.id); }}
+                                  style={{ padding: '0.25rem', opacity: 0.5 }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              
+              {Object.keys(costsByMonth).length === 0 && (
+                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                  No expenses for {selectedYear}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Right Column - Category Breakdown */}
+        <div className="card" style={{ height: 'fit-content' }}>
+          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 500, margin: 0 }}>By Category</h3>
+          </div>
+          <div style={{ padding: '0.5rem 0' }}>
+            {categoryBreakdown.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                No data
+              </div>
+            ) : (
+              categoryBreakdown.map((cat, index) => (
+                <div 
+                  key={cat.name}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    padding: '0.75rem 1.5rem',
+                    borderBottom: index < categoryBreakdown.length - 1 ? '1px solid var(--color-border)' : 'none'
+                  }}
+                >
+                  <span style={{ 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%', 
+                    background: cat.type === 'fixed' ? '#1a1a1a' : '#888',
+                    marginRight: '0.75rem',
+                    flexShrink: 0
+                  }} />
+                  <span style={{ 
+                    flex: 1, 
+                    fontSize: '0.85rem',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {cat.name}
+                  </span>
+                  <span style={{ 
+                    fontSize: '0.85rem', 
+                    fontWeight: 500,
+                    marginLeft: '0.5rem'
+                  }}>
+                    {formatCurrency(cat.amount)}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+          
+          {/* Summary at bottom */}
+          {categoryBreakdown.length > 0 && (
+            <div style={{ 
+              padding: '1rem 1.5rem', 
+              borderTop: '1px solid var(--color-border)',
+              background: 'var(--color-light-gray)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>Fixed ({categoryBreakdown.filter(c => c.type === 'fixed').length})</span>
+                <span>{formatCurrency(totalFixed)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>Variable ({categoryBreakdown.filter(c => c.type === 'variable').length})</span>
+                <span>{formatCurrency(totalVariable)}</span>
+              </div>
             </div>
           )}
         </div>
@@ -517,21 +541,21 @@ const OperationalCosts = () => {
         }}>
           <div style={{
             background: 'white',
-            borderRadius: 'var(--radius-lg)',
+            borderRadius: '12px',
             width: '100%',
-            maxWidth: '500px',
+            maxWidth: '480px',
             maxHeight: '90vh',
             overflow: 'auto',
           }}>
             <div style={{ 
-              padding: '1.5rem', 
+              padding: '1.25rem 1.5rem', 
               borderBottom: '1px solid var(--color-border)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 300 }}>
-                {editingCost ? 'Edit Cost' : 'Add Operational Cost'}
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 500 }}>
+                {editingCost ? 'Edit Cost' : 'Add Cost'}
               </h2>
               <button 
                 className="btn btn-icon" 
@@ -541,6 +565,7 @@ const OperationalCosts = () => {
                   setIsCreatingNewCategory(false);
                   setNewCategoryName('');
                 }}
+                style={{ opacity: 0.5 }}
               >
                 <X size={20} />
               </button>
@@ -549,18 +574,22 @@ const OperationalCosts = () => {
             <form onSubmit={handleAddCost} style={{ padding: '1.5rem' }}>
               {/* Cost Type */}
               <div className="form-group">
-                <label className="form-label">Cost Type</label>
-                <div style={{ display: 'flex', gap: '1rem' }}>
+                <label className="form-label">Type</label>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <label style={{ 
                     flex: 1, 
                     display: 'flex', 
                     alignItems: 'center', 
+                    justifyContent: 'center',
                     gap: '0.5rem',
-                    padding: '1rem',
+                    padding: '0.75rem',
                     border: `2px solid ${newCost.costType === 'fixed' ? 'var(--color-black)' : 'var(--color-border)'}`,
-                    borderRadius: 'var(--radius-md)',
+                    borderRadius: '8px',
                     cursor: 'pointer',
-                    transition: 'border-color 0.15s ease'
+                    transition: 'all 0.15s ease',
+                    background: newCost.costType === 'fixed' ? 'var(--color-black)' : 'transparent',
+                    color: newCost.costType === 'fixed' ? 'white' : 'inherit',
+                    fontSize: '0.9rem'
                   }}>
                     <input
                       type="radio"
@@ -572,20 +601,25 @@ const OperationalCosts = () => {
                         setIsCreatingNewCategory(false);
                         setNewCategoryName('');
                       }}
+                      style={{ display: 'none' }}
                     />
-                    <Building2 size={18} />
-                    <span>Fixed</span>
+                    <Building2 size={16} />
+                    Fixed
                   </label>
                   <label style={{ 
                     flex: 1, 
                     display: 'flex', 
                     alignItems: 'center', 
+                    justifyContent: 'center',
                     gap: '0.5rem',
-                    padding: '1rem',
+                    padding: '0.75rem',
                     border: `2px solid ${newCost.costType === 'variable' ? 'var(--color-black)' : 'var(--color-border)'}`,
-                    borderRadius: 'var(--radius-md)',
+                    borderRadius: '8px',
                     cursor: 'pointer',
-                    transition: 'border-color 0.15s ease'
+                    transition: 'all 0.15s ease',
+                    background: newCost.costType === 'variable' ? 'var(--color-black)' : 'transparent',
+                    color: newCost.costType === 'variable' ? 'white' : 'inherit',
+                    fontSize: '0.9rem'
                   }}>
                     <input
                       type="radio"
@@ -597,9 +631,10 @@ const OperationalCosts = () => {
                         setIsCreatingNewCategory(false);
                         setNewCategoryName('');
                       }}
+                      style={{ display: 'none' }}
                     />
-                    <Users size={18} />
-                    <span>Variable</span>
+                    <Users size={16} />
+                    Variable
                   </label>
                 </div>
               </div>
@@ -640,12 +675,13 @@ const OperationalCosts = () => {
                       className="form-input"
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
-                      placeholder="Enter new category name..."
+                      placeholder="Category name..."
                       autoFocus
+                      style={{ flex: 1 }}
                     />
                     <button 
                       type="button" 
-                      className="btn btn-secondary"
+                      className="btn btn-primary"
                       onClick={() => {
                         if (newCategoryName.trim()) {
                           setNewCost({ ...newCost, category: newCategoryName.trim() });
@@ -675,7 +711,7 @@ const OperationalCosts = () => {
                       required
                       style={{ flex: 1 }}
                     >
-                      <option value="">Select a category...</option>
+                      <option value="">Select category...</option>
                       {(newCost.costType === 'fixed' ? existingFixedCategories : existingVariableCategories).map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
@@ -684,7 +720,7 @@ const OperationalCosts = () => {
                       type="button" 
                       className="btn btn-secondary"
                       onClick={() => setIsCreatingNewCategory(true)}
-                      title="Create new category"
+                      title="New category"
                     >
                       <Plus size={18} />
                     </button>
@@ -694,32 +730,32 @@ const OperationalCosts = () => {
               
               {/* Description */}
               <div className="form-group">
-                <label className="form-label">Description (Optional)</label>
+                <label className="form-label">Description <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(optional)</span></label>
                 <input
                   type="text"
                   className="form-input"
                   value={newCost.description}
                   onChange={(e) => setNewCost({ ...newCost, description: e.target.value })}
-                  placeholder="e.g., January warehouse rent payment"
+                  placeholder="e.g., January rent"
                 />
               </div>
               
-              {/* Recurring checkbox */}
+              {/* Recurring */}
               <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input
                     type="checkbox"
                     checked={newCost.isRecurring}
                     onChange={(e) => setNewCost({ ...newCost, isRecurring: e.target.checked })}
                   />
-                  <span>Recurring expense</span>
+                  Recurring expense
                 </label>
               </div>
               
               {/* Actions */}
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                  {editingCost ? 'Update Cost' : 'Add Cost'}
+                  {editingCost ? 'Update' : 'Add Cost'}
                 </button>
                 <button 
                   type="button" 
