@@ -27,9 +27,9 @@ const NetProfit = () => {
   const totalGrossProfit = projectProfits.reduce((sum, p) => sum + p.grossProfit, 0);
   const totalInflows = projectProfits.reduce((sum, p) => sum + p.totalInflows, 0);
   const totalSupplierCosts = projectProfits.reduce((sum, p) => sum + p.totalSupplierCosts, 0);
-  const totalProjectValue = projectProfits.reduce((sum, p) => sum + p.totalProjectValue, 0);
+  const totalGross = projectProfits.reduce((sum, p) => sum + p.totalGross, 0);
   const totalAccountPayments = projectProfits.reduce((sum, p) => sum + p.accountPayments, 0);
-  const totalCashPayments = projectProfits.reduce((sum, p) => sum + p.cashPayments, 0);
+  const totalFeePayments = projectProfits.reduce((sum, p) => sum + p.feePayments, 0);
   
   // Operational costs
   const totalFixedCosts = state.operationalCosts.filter(c => c.costType === 'fixed').reduce((sum, c) => sum + c.amount, 0);
@@ -207,12 +207,12 @@ const NetProfit = () => {
               
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span className="stat-label">Cash Payments</span>
-                  <span style={{ fontWeight: 500, color: 'var(--color-success)' }}>{formatCurrency(totalCashPayments)}</span>
+                  <span className="stat-label">Fee Payments</span>
+                  <span style={{ fontWeight: 500, color: 'var(--color-success)' }}>{formatCurrency(totalFeePayments)}</span>
                 </div>
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ 
-                    width: totalInflows > 0 ? `${(totalCashPayments / totalInflows) * 100}%` : '0%',
+                    width: totalInflows > 0 ? `${(totalFeePayments / totalInflows) * 100}%` : '0%',
                     background: 'var(--color-success)'
                   }} />
                 </div>
@@ -222,7 +222,7 @@ const NetProfit = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span className="stat-label">Outstanding</span>
                   <span style={{ fontWeight: 500, color: 'var(--color-warning)' }}>
-                    {formatCurrency(Math.max(0, totalProjectValue - totalInflows))}
+                    {formatCurrency(Math.max(0, totalGross - totalInflows))}
                   </span>
                 </div>
               </div>

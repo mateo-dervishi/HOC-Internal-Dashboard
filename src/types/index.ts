@@ -6,13 +6,14 @@ export interface Valuation {
   
   // Values for this valuation
   grandTotal: number;        // Total goods value for this valuation (ex VAT)
-  fees: number;              // Cash/Fees portion (non-VAT) - only if CP enabled
+  fees: number;              // Fees portion (non-VAT) - only if fees enabled
   omissions: number;         // Deductions (enter as positive, will be subtracted)
+  vatRate: number;           // VAT rate (e.g., 0.20 for 20%, can vary per project)
   
   // Calculated
-  // subtotal = grandTotal - fees - omissions
-  // vat = subtotal * 0.2
-  // totalIncVat = subtotal + vat
+  // subtotal = grandTotal - omissions (fees are separate, not deducted from subtotal)
+  // vat = subtotal * vatRate
+  // gross = grandTotal + vat
   
   notes?: string;
 }
@@ -22,7 +23,7 @@ export interface Payment {
   date: string;
   amount: number;
   valuationId?: string;      // Link to which valuation this payment is for
-  type: 'account' | 'cash';  // Account (VATable) or Cash (non-VAT)
+  type: 'account' | 'cash';  // Account (VATable) or Fee (non-VAT)
   description?: string;
 }
 
@@ -40,8 +41,8 @@ export interface Project {
   clientName: string;
   address?: string;
   
-  // CP (Cash Payment) toggle
-  hasCashPayment: boolean;   // If true, project has cash/fees component
+  // Fees toggle (previously CP/Cash Payment)
+  hasCashPayment: boolean;   // If true, project has fees component
   
   // Data
   valuations: Valuation[];
@@ -75,20 +76,26 @@ export interface DashboardState {
 export const VAT_RATE = 0.20;
 
 // Helper to calculate valuation totals
-export const calculateValuationTotals = (valuation: Valuation, hasCashPayment: boolean) => {
-  const fees = hasCashPayment ? valuation.fees : 0;
+// New formula: Grand Total = Subtotal + Fees, Gross = Grand Total + VAT
+export const calculateValuationTotals = (valuation: Valuation, hasFees: boolean) => {
+  const fees = hasFees ? valuation.fees : 0;
+  // Subtotal is the VATable portion (grandTotal - fees - omissions)
   const subtotal = valuation.grandTotal - fees - valuation.omissions;
-  const vat = subtotal * VAT_RATE;
-  const totalIncVat = subtotal + vat;
+  // Use per-valuation VAT rate (default to 20% if not set)
+  const vatRate = valuation.vatRate ?? VAT_RATE;
+  const vat = subtotal * vatRate;
+  // Gross = Grand Total + VAT (the total client pays)
+  const gross = valuation.grandTotal + vat - valuation.omissions;
   
   return {
     grandTotal: valuation.grandTotal,
     fees,
     omissions: valuation.omissions,
     subtotal,
+    vatRate,
     vat,
-    totalIncVat,
-    totalWithFees: totalIncVat + fees,  // Total client pays for this valuation
+    gross,
+    totalIncVat: subtotal + vat,  // VATable portion with VAT
   };
 };
 
@@ -101,6 +108,7 @@ export const calculateProjectFinancials = (project: Project) => {
   let totalSubtotal = 0;
   let totalVat = 0;
   let totalIncVat = 0;
+  let totalGross = 0;
   
   project.valuations.forEach(v => {
     const calc = calculateValuationTotals(v, project.hasCashPayment);
@@ -110,18 +118,17 @@ export const calculateProjectFinancials = (project: Project) => {
     totalSubtotal += calc.subtotal;
     totalVat += calc.vat;
     totalIncVat += calc.totalIncVat;
+    totalGross += calc.gross;
   });
-  
-  const totalProjectValue = totalIncVat + totalFees;
   
   // Payments received
   const accountPayments = project.payments
     .filter(p => p.type === 'account')
     .reduce((sum, p) => sum + p.amount, 0);
-  const cashPayments = project.payments
+  const feePayments = project.payments
     .filter(p => p.type === 'cash')
     .reduce((sum, p) => sum + p.amount, 0);
-  const totalInflows = accountPayments + cashPayments;
+  const totalInflows = accountPayments + feePayments;
   
   // Supplier costs
   const totalSupplierCosts = project.supplierCosts.reduce((sum, c) => sum + c.amount, 0);
@@ -138,11 +145,11 @@ export const calculateProjectFinancials = (project: Project) => {
     totalSubtotal,
     totalVat,
     totalIncVat,
-    totalProjectValue,
+    totalGross,  // Gross = Grand Total + VAT (replaces totalProjectValue)
     
     // Payments
     accountPayments,
-    cashPayments,
+    feePayments,  // Renamed from cashPayments
     totalInflows,
     
     // Costs & Profit

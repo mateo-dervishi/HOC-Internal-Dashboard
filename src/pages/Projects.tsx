@@ -27,7 +27,7 @@ const Projects = () => {
       code: newProject.code,
       clientName: newProject.clientName,
       address: newProject.address,
-      hasCashPayment: false,  // Default to no CP, can enable later
+      hasCashPayment: false,  // Default to no fees, can enable later
       valuations: [],
       payments: [],
       supplierCosts: [],
@@ -117,8 +117,8 @@ const Projects = () => {
         <div className="projects-grid">
           {filteredProjects.map(project => {
             const financials = calculateProjectFinancials(project);
-            const collectionRate = financials.totalProjectValue > 0 
-              ? (financials.totalInflows / financials.totalProjectValue) * 100 
+            const collectionRate = financials.totalGross > 0 
+              ? (financials.totalInflows / financials.totalGross) * 100 
               : 0;
             
             return (
@@ -135,7 +135,7 @@ const Projects = () => {
                           {project.status}
                         </span>
                         {project.hasCashPayment && (
-                          <span className="badge badge-success">CP</span>
+                          <span className="badge badge-success">Fees</span>
                         )}
                       </div>
                     </div>
@@ -146,8 +146,8 @@ const Projects = () => {
                       <span className="project-stat-value">{project.valuations.length}</span>
                     </div>
                     <div className="project-stat">
-                      <span className="project-stat-label">Project Value</span>
-                      <span className="project-stat-value">{formatCurrency(financials.totalProjectValue)}</span>
+                      <span className="project-stat-label">Gross</span>
+                      <span className="project-stat-value">{formatCurrency(financials.totalGross)}</span>
                     </div>
                     <div className="project-stat">
                       <span className="project-stat-label">Received</span>
@@ -159,7 +159,7 @@ const Projects = () => {
                         {formatCurrency(financials.grossProfit)}
                       </span>
                     </div>
-                    {financials.totalProjectValue > 0 && (
+                    {financials.totalGross > 0 && (
                       <div style={{ marginTop: '1rem' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
                           Collection: {Math.round(collectionRate)}%
@@ -265,7 +265,7 @@ const Projects = () => {
                   <strong>Next steps after creating:</strong>
                   <ul style={{ margin: '0.5rem 0 0 1rem', padding: 0 }}>
                     <li>Add valuations (V1, V2, V3...)</li>
-                    <li>Enable Cash Payment (CP) if applicable</li>
+                    <li>Enable Fees if applicable</li>
                     <li>Record payments as they come in</li>
                     <li>Track supplier costs</li>
                   </ul>

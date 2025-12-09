@@ -28,6 +28,8 @@ const ProjectDetail = () => {
   const [showCostModal, setShowCostModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingValuation, setEditingValuation] = useState<Valuation | null>(null);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [editingCost, setEditingCost] = useState<SupplierCost | null>(null);
   
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -46,6 +48,7 @@ const ProjectDetail = () => {
     grandTotal: '',
     fees: '',
     omissions: '',
+    vatRate: '20',
     notes: '',
   });
   
@@ -109,6 +112,7 @@ const ProjectDetail = () => {
       grandTotal: parseFloat(newValuation.grandTotal) || 0,
       fees: parseFloat(newValuation.fees) || 0,
       omissions: parseFloat(newValuation.omissions) || 0,
+      vatRate: (parseFloat(newValuation.vatRate) || 20) / 100,
       notes: newValuation.notes,
     };
     
@@ -137,6 +141,7 @@ const ProjectDetail = () => {
       grandTotal: '',
       fees: '',
       omissions: '',
+      vatRate: '20',
       notes: '',
     });
   };
@@ -149,6 +154,7 @@ const ProjectDetail = () => {
       grandTotal: valuation.grandTotal.toString(),
       fees: valuation.fees.toString(),
       omissions: valuation.omissions.toString(),
+      vatRate: ((valuation.vatRate ?? VAT_RATE) * 100).toString(),
       notes: valuation.notes || '',
     });
     setShowValuationModal(true);
@@ -167,7 +173,7 @@ const ProjectDetail = () => {
   const handleAddPayment = (e: React.FormEvent) => {
     e.preventDefault();
     const payment: Payment = {
-      id: crypto.randomUUID(),
+      id: editingPayment?.id || crypto.randomUUID(),
       date: newPayment.date,
       amount: parseFloat(newPayment.amount) || 0,
       type: newPayment.type,
@@ -175,12 +181,25 @@ const ProjectDetail = () => {
       description: newPayment.description,
     };
     
-    dispatch({
-      type: 'ADD_PAYMENT',
-      payload: { projectId: project.id, payment },
-    });
+    if (editingPayment) {
+      // Update existing payment
+      const updatedPayments = project.payments.map(p => 
+        p.id === editingPayment.id ? payment : p
+      );
+      dispatch({
+        type: 'UPDATE_PROJECT',
+        payload: { ...project, payments: updatedPayments },
+      });
+    } else {
+      // Add new payment
+      dispatch({
+        type: 'ADD_PAYMENT',
+        payload: { projectId: project.id, payment },
+      });
+    }
     
     setShowPaymentModal(false);
+    setEditingPayment(null);
     setNewPayment({
       amount: '',
       type: 'account',
@@ -190,28 +209,64 @@ const ProjectDetail = () => {
     });
   };
   
+  const handleEditPayment = (payment: Payment) => {
+    setEditingPayment(payment);
+    setNewPayment({
+      amount: payment.amount.toString(),
+      type: payment.type,
+      valuationId: payment.valuationId || '',
+      date: payment.date,
+      description: payment.description || '',
+    });
+    setShowPaymentModal(true);
+  };
+  
   const handleAddCost = (e: React.FormEvent) => {
     e.preventDefault();
     const cost: SupplierCost = {
-      id: crypto.randomUUID(),
+      id: editingCost?.id || crypto.randomUUID(),
       date: newCost.date,
       amount: parseFloat(newCost.amount) || 0,
       supplier: newCost.supplier,
       description: newCost.description,
     };
     
-    dispatch({
-      type: 'ADD_SUPPLIER_COST',
-      payload: { projectId: project.id, cost },
-    });
+    if (editingCost) {
+      // Update existing cost
+      const updatedCosts = project.supplierCosts.map(c => 
+        c.id === editingCost.id ? cost : c
+      );
+      dispatch({
+        type: 'UPDATE_PROJECT',
+        payload: { ...project, supplierCosts: updatedCosts },
+      });
+    } else {
+      // Add new cost
+      dispatch({
+        type: 'ADD_SUPPLIER_COST',
+        payload: { projectId: project.id, cost },
+      });
+    }
     
     setShowCostModal(false);
+    setEditingCost(null);
     setNewCost({
       amount: '',
       supplier: '',
       date: new Date().toISOString().split('T')[0],
       description: '',
     });
+  };
+  
+  const handleEditCost = (cost: SupplierCost) => {
+    setEditingCost(cost);
+    setNewCost({
+      amount: cost.amount.toString(),
+      supplier: cost.supplier,
+      date: cost.date,
+      description: cost.description || '',
+    });
+    setShowCostModal(true);
   };
   
   const handleDeletePayment = (paymentId: string) => {
@@ -262,8 +317,8 @@ const ProjectDetail = () => {
     }
   };
   
-  const collectionRate = financials.totalProjectValue > 0 
-    ? (financials.totalInflows / financials.totalProjectValue) * 100 
+  const collectionRate = financials.totalGross > 0 
+    ? (financials.totalInflows / financials.totalGross) * 100 
     : 0;
   
   // Suggest next valuation name
@@ -280,7 +335,7 @@ const ProjectDetail = () => {
             {project.status}
           </span>
           {project.hasCashPayment && (
-            <span className="badge badge-success">CP Enabled</span>
+            <span className="badge badge-success">Fees Enabled</span>
           )}
         </div>
         
@@ -326,7 +381,7 @@ const ProjectDetail = () => {
                     checked={editForm.hasCashPayment}
                     onChange={(e) => setEditForm({ ...editForm, hasCashPayment: e.target.checked })}
                   />
-                  Cash Payment (CP)
+                  Fees
                 </label>
               </div>
             </div>
@@ -353,7 +408,7 @@ const ProjectDetail = () => {
                 className={`btn ${project.hasCashPayment ? 'btn-ghost' : 'btn-secondary'} btn-sm`} 
                 onClick={handleToggleCP}
               >
-                <Banknote size={16} /> {project.hasCashPayment ? 'Disable CP' : 'Enable CP'}
+                <Banknote size={16} /> {project.hasCashPayment ? 'Disable Fees' : 'Enable Fees'}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => setIsEditing(true)}>
                 <Edit3 size={16} /> Edit
@@ -369,8 +424,8 @@ const ProjectDetail = () => {
       {/* Stats Grid */}
       <div className="stat-grid">
         <div className="stat-card">
-          <div className="stat-label">Total Project Value</div>
-          <div className="stat-value">{formatCurrency(financials.totalProjectValue)}</div>
+          <div className="stat-label">Gross</div>
+          <div className="stat-value">{formatCurrency(financials.totalGross)}</div>
           <div className="stat-change">
             {project.valuations.length} valuation{project.valuations.length !== 1 ? 's' : ''}
           </div>
@@ -407,7 +462,7 @@ const ProjectDetail = () => {
         <div className="card-header">
           <h3 className="card-title">
             <FileText size={20} style={{ marginRight: 8, opacity: 0.7 }} />
-            Valuations
+            Contract Value
           </h3>
           <button className="btn btn-secondary btn-sm" onClick={() => {
             setEditingValuation(null);
@@ -417,6 +472,7 @@ const ProjectDetail = () => {
               grandTotal: '',
               fees: '',
               omissions: '',
+              vatRate: '20',
               notes: '',
             });
             setShowValuationModal(true);
@@ -432,11 +488,11 @@ const ProjectDetail = () => {
                   <th>Name</th>
                   <th>Date</th>
                   <th>Grand Total</th>
-                  {project.hasCashPayment && <th>Fees (Cash)</th>}
+                  {project.hasCashPayment && <th>Fees</th>}
                   <th>Omissions</th>
                   <th>Subtotal</th>
                   <th>VAT</th>
-                  <th>Total Inc VAT</th>
+                  <th>Gross</th>
                   <th></th>
                 </tr>
               </thead>
@@ -457,8 +513,12 @@ const ProjectDetail = () => {
                           {calc.omissions > 0 ? `-${formatCurrency(calc.omissions)}` : '-'}
                         </td>
                         <td>{formatCurrency(calc.subtotal)}</td>
-                        <td>{formatCurrency(calc.vat)}</td>
-                        <td style={{ fontWeight: 500 }}>{formatCurrency(calc.totalIncVat)}</td>
+                        <td>
+                          <span title={`VAT Rate: ${(calc.vatRate * 100).toFixed(0)}%`}>
+                            {formatCurrency(calc.vat)}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 500 }}>{formatCurrency(calc.gross)}</td>
                         <td>
                           <div style={{ display: 'flex', gap: '0.25rem' }}>
                             <button 
@@ -493,7 +553,7 @@ const ProjectDetail = () => {
                   </td>
                   <td><strong>{formatCurrency(financials.totalSubtotal)}</strong></td>
                   <td><strong>{formatCurrency(financials.totalVat)}</strong></td>
-                  <td><strong>{formatCurrency(financials.totalIncVat)}</strong></td>
+                  <td><strong>{formatCurrency(financials.totalGross)}</strong></td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -524,9 +584,9 @@ const ProjectDetail = () => {
             </div>
             {project.hasCashPayment && (
               <div>
-                <div className="stat-label">Cash Payments</div>
+                <div className="stat-label">Fee Payments</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--color-success)', fontFamily: 'Inter, sans-serif' }}>
-                  {formatCurrency(financials.cashPayments)}
+                  {formatCurrency(financials.feePayments)}
                 </div>
               </div>
             )}
@@ -536,9 +596,9 @@ const ProjectDetail = () => {
                 fontSize: '1.5rem', 
                 fontWeight: 300, 
                 fontFamily: 'Inter, sans-serif',
-                color: financials.totalProjectValue - financials.totalInflows > 0 ? 'var(--color-warning)' : 'var(--color-success)'
+                color: financials.totalGross - financials.totalInflows > 0 ? 'var(--color-warning)' : 'var(--color-success)'
               }}>
-                {formatCurrency(Math.max(0, financials.totalProjectValue - financials.totalInflows))}
+                {formatCurrency(Math.max(0, financials.totalGross - financials.totalInflows))}
               </div>
             </div>
           </div>
@@ -562,6 +622,7 @@ const ProjectDetail = () => {
                     <th>Date</th>
                     <th>Valuation</th>
                     <th>Type</th>
+                    <th>Description</th>
                     <th>Amount</th>
                     <th></th>
                   </tr>
@@ -577,20 +638,32 @@ const ProjectDetail = () => {
                           <td>{valuation?.name || '-'}</td>
                           <td>
                             <span className={`badge ${payment.type === 'cash' ? 'badge-success' : 'badge-neutral'}`}>
-                              {payment.type === 'cash' ? 'Cash' : 'Account'}
+                              {payment.type === 'cash' ? 'Fee' : 'Account'}
                             </span>
+                          </td>
+                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                            {payment.description || '-'}
                           </td>
                           <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
                             +{formatCurrency(payment.amount)}
                           </td>
                           <td>
-                            <button 
-                              className="btn btn-ghost btn-sm" 
-                              onClick={() => handleDeletePayment(payment.id)}
-                              style={{ padding: '0.25rem' }}
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                              <button 
+                                className="btn btn-ghost btn-sm" 
+                                onClick={() => handleEditPayment(payment)}
+                                style={{ padding: '0.25rem' }}
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                              <button 
+                                className="btn btn-ghost btn-sm" 
+                                onClick={() => handleDeletePayment(payment.id)}
+                                style={{ padding: '0.25rem' }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -622,6 +695,7 @@ const ProjectDetail = () => {
                   <tr>
                     <th>Date</th>
                     <th>Supplier</th>
+                    <th>Description</th>
                     <th>Amount</th>
                     <th></th>
                   </tr>
@@ -633,17 +707,29 @@ const ProjectDetail = () => {
                       <tr key={cost.id}>
                         <td>{formatDate(cost.date)}</td>
                         <td>{cost.supplier}</td>
+                        <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                          {cost.description || '-'}
+                        </td>
                         <td style={{ fontWeight: 500, color: 'var(--color-error)' }}>
                           -{formatCurrency(cost.amount)}
                         </td>
                         <td>
-                          <button 
-                            className="btn btn-ghost btn-sm" 
-                            onClick={() => handleDeleteCost(cost.id)}
-                            style={{ padding: '0.25rem' }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.25rem' }}>
+                            <button 
+                              className="btn btn-ghost btn-sm" 
+                              onClick={() => handleEditCost(cost)}
+                              style={{ padding: '0.25rem' }}
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button 
+                              className="btn btn-ghost btn-sm" 
+                              onClick={() => handleDeleteCost(cost.id)}
+                              style={{ padding: '0.25rem' }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -734,7 +820,7 @@ const ProjectDetail = () => {
                 
                 {project.hasCashPayment && (
                   <div className="form-group">
-                    <label className="form-label">Fees / Cash (£) - No VAT</label>
+                    <label className="form-label">Fees (£) - No VAT</label>
                     <input
                       type="number"
                       className="form-input"
@@ -745,7 +831,7 @@ const ProjectDetail = () => {
                       step="0.01"
                     />
                     <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                      Cash portion - will be subtracted from VATable amount
+                      Fees portion - will be subtracted from VATable amount
                     </small>
                   </div>
                 )}
@@ -766,6 +852,23 @@ const ProjectDetail = () => {
                   </small>
                 </div>
                 
+                <div className="form-group">
+                  <label className="form-label">VAT Rate (%)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="20"
+                    value={newValuation.vatRate}
+                    onChange={(e) => setNewValuation({ ...newValuation, vatRate: e.target.value })}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                    VAT rate for this valuation (default 20%)
+                  </small>
+                </div>
+                
                 {/* Preview */}
                 {(parseFloat(newValuation.grandTotal) > 0) && (
                   <div style={{ 
@@ -779,24 +882,25 @@ const ProjectDetail = () => {
                       const grandTotal = parseFloat(newValuation.grandTotal) || 0;
                       const fees = project.hasCashPayment ? (parseFloat(newValuation.fees) || 0) : 0;
                       const omissions = parseFloat(newValuation.omissions) || 0;
+                      const vatRate = (parseFloat(newValuation.vatRate) || 20) / 100;
                       const subtotal = grandTotal - fees - omissions;
-                      const vat = subtotal * VAT_RATE;
-                      const totalIncVat = subtotal + vat;
+                      const vat = subtotal * vatRate;
+                      const gross = grandTotal + vat - omissions;
                       
                       return (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontSize: '0.9rem' }}>
                           <div>Grand Total:</div><div style={{ textAlign: 'right' }}>{formatCurrency(grandTotal)}</div>
                           {project.hasCashPayment && fees > 0 && (
-                            <><div>Fees (Cash):</div><div style={{ textAlign: 'right', color: 'var(--color-success)' }}>-{formatCurrency(fees)}</div></>
+                            <><div>Fees:</div><div style={{ textAlign: 'right', color: 'var(--color-success)' }}>-{formatCurrency(fees)}</div></>
                           )}
                           {omissions > 0 && (
                             <><div>Omissions:</div><div style={{ textAlign: 'right', color: 'var(--color-error)' }}>-{formatCurrency(omissions)}</div></>
                           )}
                           <div>Subtotal:</div><div style={{ textAlign: 'right' }}>{formatCurrency(subtotal)}</div>
-                          <div>VAT (20%):</div><div style={{ textAlign: 'right' }}>{formatCurrency(vat)}</div>
-                          <div style={{ fontWeight: 600 }}>Total Inc VAT:</div><div style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(totalIncVat)}</div>
+                          <div>VAT ({(vatRate * 100).toFixed(0)}%):</div><div style={{ textAlign: 'right' }}>{formatCurrency(vat)}</div>
+                          <div style={{ fontWeight: 600 }}>Gross:</div><div style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(gross)}</div>
                           {project.hasCashPayment && fees > 0 && (
-                            <><div style={{ fontWeight: 600 }}>+ Cash:</div><div style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-success)' }}>{formatCurrency(fees)}</div></>
+                            <><div style={{ fontWeight: 600 }}>+ Fees:</div><div style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-success)' }}>{formatCurrency(fees)}</div></>
                           )}
                         </div>
                       );
@@ -830,11 +934,11 @@ const ProjectDetail = () => {
       
       {/* Add Payment Modal */}
       {showPaymentModal && (
-        <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
+        <div className="modal-overlay" onClick={() => { setShowPaymentModal(false); setEditingPayment(null); }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">Add Payment</h2>
-              <button className="modal-close" onClick={() => setShowPaymentModal(false)}>✕</button>
+              <h2 className="modal-title">{editingPayment ? 'Edit Payment' : 'Add Payment'}</h2>
+              <button className="modal-close" onClick={() => { setShowPaymentModal(false); setEditingPayment(null); }}>✕</button>
             </div>
             <form onSubmit={handleAddPayment}>
               <div className="modal-body">
@@ -886,7 +990,7 @@ const ProjectDetail = () => {
                     >
                       <option value="account">Account</option>
                       {project.hasCashPayment && (
-                        <option value="cash">Cash</option>
+                        <option value="cash">Fee</option>
                       )}
                     </select>
                   </div>
@@ -904,11 +1008,11 @@ const ProjectDetail = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowPaymentModal(false)}>
+                <button type="button" className="btn btn-ghost" onClick={() => { setShowPaymentModal(false); setEditingPayment(null); }}>
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Add Payment
+                  {editingPayment ? 'Update Payment' : 'Add Payment'}
                 </button>
               </div>
             </form>
@@ -918,11 +1022,11 @@ const ProjectDetail = () => {
       
       {/* Add Supplier Cost Modal */}
       {showCostModal && (
-        <div className="modal-overlay" onClick={() => setShowCostModal(false)}>
+        <div className="modal-overlay" onClick={() => { setShowCostModal(false); setEditingCost(null); }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">Add Supplier Cost</h2>
-              <button className="modal-close" onClick={() => setShowCostModal(false)}>✕</button>
+              <h2 className="modal-title">{editingCost ? 'Edit Supplier Cost' : 'Add Supplier Cost'}</h2>
+              <button className="modal-close" onClick={() => { setShowCostModal(false); setEditingCost(null); }}>✕</button>
             </div>
             <form onSubmit={handleAddCost}>
               <div className="modal-body">
@@ -975,11 +1079,11 @@ const ProjectDetail = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowCostModal(false)}>
+                <button type="button" className="btn btn-ghost" onClick={() => { setShowCostModal(false); setEditingCost(null); }}>
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Add Cost
+                  {editingCost ? 'Update Cost' : 'Add Cost'}
                 </button>
               </div>
             </form>

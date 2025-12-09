@@ -211,7 +211,7 @@ const Settings = () => {
           }}>
             <strong>Payment Terms:</strong> 20/70/10 (Upfront / Before Production / On Delivery)
             <br />
-            <strong>Cash Payment Split:</strong> 60% Account / 40% Cash
+            <strong>Fee Split:</strong> 60% Account / 40% Fees
           </div>
         </div>
       </div>

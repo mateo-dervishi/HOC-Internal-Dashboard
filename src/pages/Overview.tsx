@@ -12,7 +12,7 @@ const Overview = () => {
     financials: calculateProjectFinancials(p),
   }));
   
-  const totalProjectValue = projectFinancials.reduce((sum, p) => sum + p.financials.totalProjectValue, 0);
+  const totalGross = projectFinancials.reduce((sum, p) => sum + p.financials.totalGross, 0);
   const totalInflows = projectFinancials.reduce((sum, p) => sum + p.financials.totalInflows, 0);
   const totalSupplierCosts = projectFinancials.reduce((sum, p) => sum + p.financials.totalSupplierCosts, 0);
   
@@ -50,8 +50,8 @@ const Overview = () => {
       
       <div className="stat-grid">
         <div className="stat-card">
-          <div className="stat-label">Total Project Value</div>
-          <div className="stat-value">{formatCurrency(totalProjectValue)}</div>
+          <div className="stat-label">Gross</div>
+          <div className="stat-value">{formatCurrency(totalGross)}</div>
           <div className="stat-change">
             {state.projects.length} project{state.projects.length !== 1 ? 's' : ''}
           </div>
@@ -147,7 +147,7 @@ const Overview = () => {
             <div className="project-stat">
               <span className="project-stat-label">Collection Rate</span>
               <span className="project-stat-value">
-                {totalProjectValue > 0 ? Math.round((totalInflows / totalProjectValue) * 100) : 0}%
+                {totalGross > 0 ? Math.round((totalInflows / totalGross) * 100) : 0}%
               </span>
             </div>
             <div style={{ marginTop: '1rem' }}>
