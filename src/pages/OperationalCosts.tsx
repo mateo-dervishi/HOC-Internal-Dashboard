@@ -193,34 +193,36 @@ const OperationalCosts = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1200px' }}>
+    <div style={{ maxWidth: '1100px' }}>
       {/* Header */}
       <header style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        marginBottom: '2.5rem'
+        marginBottom: '2rem'
       }}>
         <div>
           <h1 style={{ 
-            fontSize: '1.75rem', 
+            fontSize: '1.5rem', 
             fontWeight: 300, 
-            letterSpacing: '-0.02em',
-            marginBottom: '0.25rem'
+            letterSpacing: '-0.01em',
+            marginBottom: '0.25rem',
+            color: 'var(--color-text)'
           }}>
             Operational Costs
           </h1>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
             {selectedYear} Overview
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {/* Year Tabs */}
           <div style={{ 
             display: 'flex', 
-            background: 'var(--color-light-gray)', 
-            borderRadius: '8px',
-            padding: '4px'
+            background: 'var(--color-bg-card)', 
+            borderRadius: '6px',
+            padding: '3px',
+            border: '1px solid var(--color-border)'
           }}>
             {availableYears.map(year => (
               <button
@@ -228,14 +230,14 @@ const OperationalCosts = () => {
                 onClick={() => setSelectedYear(year)}
                 style={{ 
                   padding: '0.5rem 1rem',
-                  fontSize: '0.85rem',
+                  fontSize: '0.8rem',
                   fontWeight: selectedYear === year ? 500 : 400,
-                  background: selectedYear === year ? 'white' : 'transparent',
+                  background: selectedYear === year ? 'var(--color-bg-hover)' : 'transparent',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  boxShadow: selectedYear === year ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                  color: selectedYear === year ? 'var(--color-text)' : 'var(--color-text-muted)',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 {year}
@@ -243,7 +245,7 @@ const OperationalCosts = () => {
             ))}
           </div>
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-            <Plus size={18} />
+            <Plus size={16} />
             Add Cost
           </button>
         </div>
@@ -253,60 +255,72 @@ const OperationalCosts = () => {
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: '1fr 1fr 1fr', 
-        gap: '1px',
-        background: 'var(--color-border)',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        marginBottom: '2rem'
+        gap: '1rem',
+        marginBottom: '1.5rem'
       }}>
-        <div style={{ background: 'var(--color-black)', padding: '1.5rem 2rem', color: 'white' }}>
-          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1.5px', opacity: 0.6, marginBottom: '0.5rem' }}>
+        <div style={{ 
+          background: 'var(--color-bg-card)', 
+          padding: '1.25rem 1.5rem', 
+          borderRadius: '6px',
+          border: '1px solid var(--color-border)'
+        }}>
+          <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
             Total Expenses
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 300, letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 300, color: 'var(--color-text)' }}>
             {formatCurrency(totalYear)}
           </div>
         </div>
-        <div style={{ background: 'white', padding: '1.5rem 2rem' }}>
-          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--color-text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ 
+          background: 'var(--color-bg-card)', 
+          padding: '1.25rem 1.5rem', 
+          borderRadius: '6px',
+          border: '1px solid var(--color-border)'
+        }}>
+          <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--color-text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Building2 size={12} /> Fixed
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 300, letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 300, color: 'var(--color-text)' }}>
             {formatCurrency(totalFixed)}
           </div>
         </div>
-        <div style={{ background: 'white', padding: '1.5rem 2rem' }}>
-          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--color-text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ 
+          background: 'var(--color-bg-card)', 
+          padding: '1.25rem 1.5rem', 
+          borderRadius: '6px',
+          border: '1px solid var(--color-border)'
+        }}>
+          <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--color-text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Users size={12} /> Variable
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 300, letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 300, color: 'var(--color-text)' }}>
             {formatCurrency(totalVariable)}
           </div>
         </div>
       </div>
       
       {/* Main Content Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1rem' }}>
         
         {/* Left Column - Chart + Monthly List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
           {/* Monthly Chart */}
           <div className="card">
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-border)' }}>
-              <h3 style={{ fontSize: '0.9rem', fontWeight: 500, margin: 0 }}>Monthly Expenses</h3>
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-border)' }}>
+              <h3 style={{ fontSize: '0.75rem', fontWeight: 500, margin: 0, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Expenses</h3>
             </div>
-            <div style={{ padding: '1.5rem', height: '280px' }}>
+            <div style={{ padding: '1.25rem', height: '260px' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <BarChart data={monthlyChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                   <XAxis 
                     dataKey="month" 
-                    tick={{ fontSize: 11, fill: '#888' }} 
+                    tick={{ fontSize: 10, fill: '#707070' }} 
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis 
-                    tick={{ fontSize: 11, fill: '#888' }} 
+                    tick={{ fontSize: 10, fill: '#707070' }} 
                     tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
                     axisLine={false}
                     tickLine={false}
@@ -314,31 +328,32 @@ const OperationalCosts = () => {
                   <Tooltip 
                     formatter={(value: number, name: string) => [formatCurrencyFull(value), name === 'fixed' ? 'Fixed' : 'Variable']}
                     contentStyle={{ 
-                      background: 'white', 
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      fontSize: '0.85rem'
+                      background: '#1A1A1A', 
+                      border: '1px solid #333',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      color: '#fff'
                     }}
+                    labelStyle={{ color: '#999' }}
                   />
-                  <Bar dataKey="fixed" stackId="a" fill="#1a1a1a" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="variable" stackId="a" fill="#888888" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="fixed" stackId="a" fill="#ffffff" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="variable" stackId="a" fill="#555555" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
             <div style={{ 
-              padding: '1rem 1.5rem', 
+              padding: '0.75rem 1.25rem', 
               borderTop: '1px solid var(--color-border)',
               display: 'flex',
               gap: '1.5rem',
-              fontSize: '0.8rem'
+              fontSize: '0.75rem'
             }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ width: 12, height: 12, background: '#1a1a1a', borderRadius: 2 }} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)' }}>
+                <span style={{ width: 10, height: 10, background: '#ffffff', borderRadius: 2 }} />
                 Fixed
               </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ width: 12, height: 12, background: '#888888', borderRadius: 2 }} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)' }}>
+                <span style={{ width: 10, height: 10, background: '#555555', borderRadius: 2 }} />
                 Variable
               </span>
             </div>
@@ -346,10 +361,10 @@ const OperationalCosts = () => {
           
           {/* Monthly Breakdown */}
           <div className="card" style={{ flex: 1 }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-border)' }}>
-              <h3 style={{ fontSize: '0.9rem', fontWeight: 500, margin: 0 }}>Monthly Breakdown</h3>
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-border)' }}>
+              <h3 style={{ fontSize: '0.75rem', fontWeight: 500, margin: 0, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Breakdown</h3>
             </div>
-            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
               {Object.keys(costsByMonth)
                 .sort((a, b) => a.localeCompare(b))
                 .map(monthKey => {
@@ -366,52 +381,53 @@ const OperationalCosts = () => {
                         style={{ 
                           display: 'flex', 
                           alignItems: 'center', 
-                          padding: '1rem 1.5rem',
+                          padding: '0.875rem 1.25rem',
                           cursor: 'pointer',
                           transition: 'background 0.15s ease',
-                          background: isExpanded ? 'var(--color-light-gray)' : 'transparent',
+                          background: isExpanded ? 'var(--color-bg-hover)' : 'transparent',
                         }}
-                        onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.background = 'var(--color-light-gray)'; }}
+                        onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.background = 'var(--color-bg-hover)'; }}
                         onMouseLeave={(e) => { if (!isExpanded) e.currentTarget.style.background = 'transparent'; }}
                       >
-                        {isExpanded ? <ChevronDown size={16} style={{ opacity: 0.5 }} /> : <ChevronRight size={16} style={{ opacity: 0.5 }} />}
-                        <span style={{ flex: 1, marginLeft: '0.75rem', fontWeight: 500, fontSize: '0.9rem' }}>
+                        {isExpanded ? <ChevronDown size={14} style={{ color: 'var(--color-text-muted)' }} /> : <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />}
+                        <span style={{ flex: 1, marginLeft: '0.625rem', fontWeight: 500, fontSize: '0.85rem', color: 'var(--color-text)' }}>
                           {getMonthName(monthKey)}
                         </span>
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.85rem' }}>
-                          <span style={{ color: 'var(--color-text-muted)', minWidth: '70px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.8rem' }}>
+                          <span style={{ color: 'var(--color-text-muted)', minWidth: '60px', textAlign: 'right' }}>
                             {formatCurrency(fixedTotal)}
                           </span>
-                          <span style={{ color: 'var(--color-text-muted)', minWidth: '70px', textAlign: 'right' }}>
+                          <span style={{ color: 'var(--color-text-muted)', minWidth: '60px', textAlign: 'right' }}>
                             {formatCurrency(variableTotal)}
                           </span>
-                          <span style={{ fontWeight: 600, minWidth: '90px', textAlign: 'right' }}>
+                          <span style={{ fontWeight: 500, minWidth: '80px', textAlign: 'right', color: 'var(--color-text)' }}>
                             {formatCurrency(monthTotal)}
                           </span>
                         </div>
                       </div>
                       
                       {isExpanded && (
-                        <div style={{ background: 'var(--color-off-white)' }}>
+                        <div style={{ background: 'var(--color-bg-elevated)' }}>
                           {costs.map(cost => (
                             <div 
                               key={cost.id} 
                               style={{ 
                                 display: 'flex', 
                                 alignItems: 'center',
-                                padding: '0.75rem 1.5rem 0.75rem 3rem',
-                                borderTop: '1px solid var(--color-border)',
-                                fontSize: '0.85rem'
+                                padding: '0.625rem 1.25rem 0.625rem 2.5rem',
+                                borderTop: '1px solid var(--color-border-light)',
+                                fontSize: '0.8rem'
                               }}
                             >
                               <span style={{ 
-                                width: 6, 
-                                height: 6, 
+                                width: 5, 
+                                height: 5, 
                                 borderRadius: '50%', 
-                                background: cost.costType === 'fixed' ? '#1a1a1a' : '#888',
-                                marginRight: '0.75rem'
+                                background: cost.costType === 'fixed' ? '#ffffff' : '#555',
+                                marginRight: '0.625rem',
+                                flexShrink: 0
                               }} />
-                              <span style={{ flex: 1 }}>
+                              <span style={{ flex: 1, color: 'var(--color-text-secondary)' }}>
                                 {cost.category}
                                 {cost.description && (
                                   <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>
@@ -419,23 +435,23 @@ const OperationalCosts = () => {
                                   </span>
                                 )}
                               </span>
-                              <span style={{ fontWeight: 500, marginRight: '1rem' }}>
+                              <span style={{ fontWeight: 500, marginRight: '0.75rem', color: 'var(--color-text)' }}>
                                 {formatCurrencyFull(cost.amount)}
                               </span>
-                              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                              <div style={{ display: 'flex', gap: '0.125rem' }}>
                                 <button 
                                   className="btn btn-icon" 
                                   onClick={(e) => { e.stopPropagation(); handleEdit(cost); }}
-                                  style={{ padding: '0.25rem', opacity: 0.5 }}
+                                  style={{ padding: '0.25rem' }}
                                 >
-                                  <Edit3 size={14} />
+                                  <Edit3 size={13} />
                                 </button>
                                 <button 
                                   className="btn btn-icon" 
                                   onClick={(e) => { e.stopPropagation(); handleDelete(cost.id); }}
-                                  style={{ padding: '0.25rem', opacity: 0.5 }}
+                                  style={{ padding: '0.25rem' }}
                                 >
-                                  <Trash2 size={14} />
+                                  <Trash2 size={13} />
                                 </button>
                               </div>
                             </div>
@@ -447,7 +463,7 @@ const OperationalCosts = () => {
                 })}
               
               {Object.keys(costsByMonth).length === 0 && (
-                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                   No expenses for {selectedYear}
                 </div>
               )}
@@ -457,12 +473,12 @@ const OperationalCosts = () => {
         
         {/* Right Column - Category Breakdown */}
         <div className="card" style={{ height: 'fit-content' }}>
-          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-border)' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 500, margin: 0 }}>By Category</h3>
+          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '0.75rem', fontWeight: 500, margin: 0, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>By Category</h3>
           </div>
-          <div style={{ padding: '0.5rem 0' }}>
+          <div style={{ padding: '0.25rem 0' }}>
             {categoryBreakdown.length === 0 ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
                 No data
               </div>
             ) : (
@@ -472,31 +488,33 @@ const OperationalCosts = () => {
                   style={{ 
                     display: 'flex', 
                     alignItems: 'center',
-                    padding: '0.75rem 1.5rem',
-                    borderBottom: index < categoryBreakdown.length - 1 ? '1px solid var(--color-border)' : 'none'
+                    padding: '0.625rem 1.25rem',
+                    borderBottom: index < categoryBreakdown.length - 1 ? '1px solid var(--color-border-light)' : 'none'
                   }}
                 >
                   <span style={{ 
-                    width: 8, 
-                    height: 8, 
+                    width: 6, 
+                    height: 6, 
                     borderRadius: '50%', 
-                    background: cat.type === 'fixed' ? '#1a1a1a' : '#888',
-                    marginRight: '0.75rem',
+                    background: cat.type === 'fixed' ? '#ffffff' : '#555',
+                    marginRight: '0.625rem',
                     flexShrink: 0
                   }} />
                   <span style={{ 
                     flex: 1, 
-                    fontSize: '0.85rem',
+                    fontSize: '0.8rem',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    color: 'var(--color-text-secondary)'
                   }}>
                     {cat.name}
                   </span>
                   <span style={{ 
-                    fontSize: '0.85rem', 
+                    fontSize: '0.8rem', 
                     fontWeight: 500,
-                    marginLeft: '0.5rem'
+                    marginLeft: '0.5rem',
+                    color: 'var(--color-text)'
                   }}>
                     {formatCurrency(cat.amount)}
                   </span>
@@ -508,17 +526,17 @@ const OperationalCosts = () => {
           {/* Summary at bottom */}
           {categoryBreakdown.length > 0 && (
             <div style={{ 
-              padding: '1rem 1.5rem', 
+              padding: '0.875rem 1.25rem', 
               borderTop: '1px solid var(--color-border)',
-              background: 'var(--color-light-gray)'
+              background: 'var(--color-bg-elevated)'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.375rem' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>Fixed ({categoryBreakdown.filter(c => c.type === 'fixed').length})</span>
-                <span>{formatCurrency(totalFixed)}</span>
+                <span style={{ color: 'var(--color-text-secondary)' }}>{formatCurrency(totalFixed)}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>Variable ({categoryBreakdown.filter(c => c.type === 'variable').length})</span>
-                <span>{formatCurrency(totalVariable)}</span>
+                <span style={{ color: 'var(--color-text-secondary)' }}>{formatCurrency(totalVariable)}</span>
               </div>
             </div>
           )}
@@ -533,17 +551,19 @@ const OperationalCosts = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000,
         }}>
           <div style={{
-            background: 'white',
-            borderRadius: '12px',
+            background: 'var(--color-bg-card)',
+            borderRadius: '8px',
+            border: '1px solid var(--color-border)',
             width: '100%',
-            maxWidth: '480px',
+            maxWidth: '440px',
             maxHeight: '90vh',
             overflow: 'auto',
           }}>
@@ -554,7 +574,7 @@ const OperationalCosts = () => {
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 500 }}>
+              <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 500, color: 'var(--color-text)' }}>
                 {editingCost ? 'Edit Cost' : 'Add Cost'}
               </h2>
               <button 
@@ -565,9 +585,8 @@ const OperationalCosts = () => {
                   setIsCreatingNewCategory(false);
                   setNewCategoryName('');
                 }}
-                style={{ opacity: 0.5 }}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
             
@@ -575,7 +594,7 @@ const OperationalCosts = () => {
               {/* Cost Type */}
               <div className="form-group">
                 <label className="form-label">Type</label>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.625rem' }}>
                   <label style={{ 
                     flex: 1, 
                     display: 'flex', 
@@ -583,13 +602,13 @@ const OperationalCosts = () => {
                     justifyContent: 'center',
                     gap: '0.5rem',
                     padding: '0.75rem',
-                    border: `2px solid ${newCost.costType === 'fixed' ? 'var(--color-black)' : 'var(--color-border)'}`,
-                    borderRadius: '8px',
+                    border: `1px solid ${newCost.costType === 'fixed' ? 'var(--color-text)' : 'var(--color-border)'}`,
+                    borderRadius: '6px',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
-                    background: newCost.costType === 'fixed' ? 'var(--color-black)' : 'transparent',
-                    color: newCost.costType === 'fixed' ? 'white' : 'inherit',
-                    fontSize: '0.9rem'
+                    background: newCost.costType === 'fixed' ? 'var(--color-text)' : 'transparent',
+                    color: newCost.costType === 'fixed' ? 'var(--color-bg)' : 'var(--color-text-secondary)',
+                    fontSize: '0.85rem'
                   }}>
                     <input
                       type="radio"
@@ -603,7 +622,7 @@ const OperationalCosts = () => {
                       }}
                       style={{ display: 'none' }}
                     />
-                    <Building2 size={16} />
+                    <Building2 size={15} />
                     Fixed
                   </label>
                   <label style={{ 
@@ -613,13 +632,13 @@ const OperationalCosts = () => {
                     justifyContent: 'center',
                     gap: '0.5rem',
                     padding: '0.75rem',
-                    border: `2px solid ${newCost.costType === 'variable' ? 'var(--color-black)' : 'var(--color-border)'}`,
-                    borderRadius: '8px',
+                    border: `1px solid ${newCost.costType === 'variable' ? 'var(--color-text)' : 'var(--color-border)'}`,
+                    borderRadius: '6px',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
-                    background: newCost.costType === 'variable' ? 'var(--color-black)' : 'transparent',
-                    color: newCost.costType === 'variable' ? 'white' : 'inherit',
-                    fontSize: '0.9rem'
+                    background: newCost.costType === 'variable' ? 'var(--color-text)' : 'transparent',
+                    color: newCost.costType === 'variable' ? 'var(--color-bg)' : 'var(--color-text-secondary)',
+                    fontSize: '0.85rem'
                   }}>
                     <input
                       type="radio"
@@ -633,14 +652,14 @@ const OperationalCosts = () => {
                       }}
                       style={{ display: 'none' }}
                     />
-                    <Users size={16} />
+                    <Users size={15} />
                     Variable
                   </label>
                 </div>
               </div>
               
               {/* Amount & Date */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div className="form-group">
                   <label className="form-label">Amount (£)</label>
                   <input
@@ -722,7 +741,7 @@ const OperationalCosts = () => {
                       onClick={() => setIsCreatingNewCategory(true)}
                       title="New category"
                     >
-                      <Plus size={18} />
+                      <Plus size={16} />
                     </button>
                   </div>
                 )}
@@ -730,7 +749,7 @@ const OperationalCosts = () => {
               
               {/* Description */}
               <div className="form-group">
-                <label className="form-label">Description <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(optional)</span></label>
+                <label className="form-label">Description <span style={{ color: 'var(--color-text-dim)', fontWeight: 400 }}>(optional)</span></label>
                 <input
                   type="text"
                   className="form-input"
@@ -742,7 +761,7 @@ const OperationalCosts = () => {
               
               {/* Recurring */}
               <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                   <input
                     type="checkbox"
                     checked={newCost.isRecurring}
@@ -753,7 +772,7 @@ const OperationalCosts = () => {
               </div>
               
               {/* Actions */}
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.625rem', marginTop: '1.5rem' }}>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
                   {editingCost ? 'Update' : 'Add Cost'}
                 </button>
