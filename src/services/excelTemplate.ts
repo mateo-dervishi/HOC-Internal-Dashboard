@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { calculateProjectFinancials } from '../types';
 
 // Column width helper (in characters)
 const colWidth = (width: number) => ({ wch: width });
@@ -10,7 +11,6 @@ export const generateExcelTemplate = () => {
   
   // ========================================
   // SHEET 1: Projects
-  // Row 1 = Headers, Row 2+ = Data
   // ========================================
   const projectsData = [
     ['ProjectCode', 'ClientName', 'Address', 'Status', 'CPEnabled', 'CreatedDate', 'Notes'],
@@ -109,15 +109,17 @@ export const generateExcelTemplate = () => {
   URL.revokeObjectURL(url);
 };
 
-// Export current dashboard data to Excel
+// Export current dashboard data to a nicely formatted Excel report
 export const exportDataToExcel = (state: {
   projects: Array<{
+    id: string;
     code: string;
     clientName: string;
     address?: string;
     status: string;
     hasCashPayment: boolean;
     valuations: Array<{
+      id: string;
       name: string;
       date: string;
       grandTotal: number;
@@ -127,6 +129,7 @@ export const exportDataToExcel = (state: {
       notes?: string;
     }>;
     payments: Array<{
+      id: string;
       date: string;
       amount: number;
       type: string;
@@ -134,6 +137,7 @@ export const exportDataToExcel = (state: {
       description?: string;
     }>;
     supplierCosts: Array<{
+      id: string;
       date: string;
       amount: number;
       supplier: string;
@@ -143,6 +147,7 @@ export const exportDataToExcel = (state: {
     notes?: string;
   }>;
   operationalCosts: Array<{
+    id: string;
     date: string;
     amount: number;
     category: string;
@@ -152,141 +157,255 @@ export const exportDataToExcel = (state: {
   }>;
 }) => {
   const wb = XLSX.utils.book_new();
+  const today = new Date().toLocaleDateString('en-GB');
   
-  // Projects sheet
-  const projectsData = [
-    ['ProjectCode', 'ClientName', 'Address', 'Status', 'CPEnabled', 'CreatedDate', 'Notes'],
-    ...state.projects.map(p => [
+  // Calculate totals for summary
+  let totalGross = 0;
+  let totalInflows = 0;
+  let totalSupplierCosts = 0;
+  let totalProjectProfit = 0;
+  
+  state.projects.forEach(p => {
+    const financials = calculateProjectFinancials(p);
+    totalGross += financials.totalGross;
+    totalInflows += financials.totalInflows;
+    totalSupplierCosts += financials.totalSupplierCosts;
+    totalProjectProfit += financials.profit;
+  });
+  
+  const totalFixedCosts = state.operationalCosts
+    .filter(c => c.costType === 'fixed')
+    .reduce((sum, c) => sum + c.amount, 0);
+  const totalVariableCosts = state.operationalCosts
+    .filter(c => c.costType === 'variable')
+    .reduce((sum, c) => sum + c.amount, 0);
+  const totalOpCosts = totalFixedCosts + totalVariableCosts;
+  const netProfit = totalProjectProfit - totalOpCosts;
+  
+  // ========================================
+  // SHEET 1: Summary
+  // ========================================
+  const summaryData = [
+    ['HOUSE OF CLARENCE'],
+    ['Financial Dashboard Report'],
+    [''],
+    ['Generated:', today],
+    [''],
+    [''],
+    ['QUICK STATS'],
+    ['Metric', 'Value', 'Notes'],
+    ['Total Projects', state.projects.length, ''],
+    ['Active Projects', state.projects.filter(p => p.status === 'active').length, ''],
+    ['Completed Projects', state.projects.filter(p => p.status === 'completed').length, ''],
+    [''],
+    ['FINANCIAL OVERVIEW'],
+    ['Metric', 'Value', 'Notes'],
+    ['Total Gross (Valuations)', `£${totalGross.toLocaleString()}`, 'Sum of all valuation gross amounts'],
+    ['Total Client Payments', `£${totalInflows.toLocaleString()}`, 'Total received from clients'],
+    ['Total Supplier Costs', `£${totalSupplierCosts.toLocaleString()}`, 'Sum of all supplier costs'],
+    ['Project Profit', `£${totalProjectProfit.toLocaleString()}`, 'Inflows minus supplier costs'],
+    [''],
+    ['OPERATIONAL COSTS'],
+    ['Fixed Costs', `£${totalFixedCosts.toLocaleString()}`, 'Rent, Insurance, etc.'],
+    ['Variable Costs', `£${totalVariableCosts.toLocaleString()}`, 'Salaries, Marketing, etc.'],
+    ['Total Operational', `£${totalOpCosts.toLocaleString()}`, ''],
+    [''],
+    ['NET PROFIT', `£${netProfit.toLocaleString()}`, 'Project Profit minus Operational Costs'],
+  ];
+  
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+  summarySheet['!cols'] = [colWidth(25), colWidth(20), colWidth(35)];
+  XLSX.utils.book_append_sheet(wb, summarySheet, 'Summary');
+  
+  // ========================================
+  // SHEET 2: Projects Overview
+  // ========================================
+  const projectsHeader = [
+    ['PROJECTS OVERVIEW'],
+    [''],
+    ['Code', 'Client', 'Address', 'Status', 'CP', 'Gross', 'Inflows', 'Costs', 'Profit', 'Margin', 'Created'],
+  ];
+  
+  const projectRows = state.projects.map(p => {
+    const fin = calculateProjectFinancials(p);
+    const margin = fin.totalGross > 0 ? ((fin.profit / fin.totalGross) * 100).toFixed(1) + '%' : '0%';
+    return [
       p.code,
       p.clientName,
       p.address || '',
-      p.status,
+      p.status.charAt(0).toUpperCase() + p.status.slice(1),
       p.hasCashPayment ? 'Yes' : 'No',
+      `£${fin.totalGross.toLocaleString()}`,
+      `£${fin.totalInflows.toLocaleString()}`,
+      `£${fin.totalSupplierCosts.toLocaleString()}`,
+      `£${fin.profit.toLocaleString()}`,
+      margin,
       new Date(p.createdAt).toLocaleDateString('en-GB'),
-      p.notes || ''
-    ])
-  ];
-  if (projectsData.length === 1) {
-    projectsData.push(['', '', '', '', '', '', '']);
-  }
+    ];
+  });
+  
+  const projectsData = [...projectsHeader, ...projectRows];
   const projectsSheet = XLSX.utils.aoa_to_sheet(projectsData);
   projectsSheet['!cols'] = [
-    colWidth(15), colWidth(20), colWidth(35), colWidth(12), 
-    colWidth(12), colWidth(14), colWidth(30)
+    colWidth(14), colWidth(20), colWidth(30), colWidth(12), colWidth(6),
+    colWidth(14), colWidth(14), colWidth(14), colWidth(14), colWidth(10), colWidth(12)
   ];
   XLSX.utils.book_append_sheet(wb, projectsSheet, 'Projects');
   
-  // Valuations sheet
-  const valuationsData = [
-    ['ProjectCode', 'ValuationName', 'Date', 'GrandTotal', 'Fees', 'Omissions', 'VATRate', 'Notes'],
-    ...state.projects.flatMap(p => 
-      p.valuations.map(v => [
+  // ========================================
+  // SHEET 3: Valuations Detail
+  // ========================================
+  const valuationsHeader = [
+    ['VALUATIONS DETAIL'],
+    [''],
+    ['Project', 'Client', 'Valuation', 'Date', 'Grand Total', 'Fees', 'Omissions', 'VAT Rate', 'Subtotal', 'VAT', 'Gross'],
+  ];
+  
+  const valuationRows: (string | number)[][] = [];
+  state.projects.forEach(p => {
+    p.valuations.forEach(v => {
+      const subtotal = v.grandTotal - v.fees - v.omissions;
+      const vat = subtotal * v.vatRate;
+      const gross = subtotal + vat;
+      valuationRows.push([
         p.code,
+        p.clientName,
         v.name,
         new Date(v.date).toLocaleDateString('en-GB'),
-        v.grandTotal,
-        v.fees,
-        v.omissions,
-        v.vatRate * 100,
-        v.notes || ''
-      ])
-    )
-  ];
-  if (valuationsData.length === 1) {
-    valuationsData.push(['', '', '', '', '', '', '', '']);
-  }
+        `£${v.grandTotal.toLocaleString()}`,
+        `£${v.fees.toLocaleString()}`,
+        `£${v.omissions.toLocaleString()}`,
+        `${(v.vatRate * 100).toFixed(0)}%`,
+        `£${subtotal.toLocaleString()}`,
+        `£${vat.toLocaleString()}`,
+        `£${gross.toLocaleString()}`,
+      ]);
+    });
+  });
+  
+  const valuationsData = [...valuationsHeader, ...valuationRows];
   const valuationsSheet = XLSX.utils.aoa_to_sheet(valuationsData);
   valuationsSheet['!cols'] = [
-    colWidth(15), colWidth(20), colWidth(14), colWidth(14),
-    colWidth(12), colWidth(12), colWidth(10), colWidth(30)
+    colWidth(14), colWidth(18), colWidth(18), colWidth(12), colWidth(14),
+    colWidth(12), colWidth(12), colWidth(10), colWidth(14), colWidth(12), colWidth(14)
   ];
   XLSX.utils.book_append_sheet(wb, valuationsSheet, 'Valuations');
   
-  // Payments sheet
-  const paymentsData = [
-    ['ProjectCode', 'Date', 'Amount', 'PaymentType', 'Description'],
-    ...state.projects.flatMap(p => 
-      p.payments.map(pay => [
-        p.code,
-        new Date(pay.date).toLocaleDateString('en-GB'),
-        pay.amount,
-        pay.type === 'account' ? 'Account' : 'Cash',
-        pay.description || ''
-      ])
-    )
+  // ========================================
+  // SHEET 4: Client Payments
+  // ========================================
+  const paymentsHeader = [
+    ['CLIENT PAYMENTS (INFLOWS)'],
+    [''],
+    ['Project', 'Client', 'Date', 'Amount', 'Type', 'Description'],
   ];
-  if (paymentsData.length === 1) {
-    paymentsData.push(['', '', '', '', '']);
-  }
+  
+  const paymentRows: (string | number)[][] = [];
+  state.projects.forEach(p => {
+    p.payments.forEach(pay => {
+      paymentRows.push([
+        p.code,
+        p.clientName,
+        new Date(pay.date).toLocaleDateString('en-GB'),
+        `£${pay.amount.toLocaleString()}`,
+        pay.type === 'account' ? 'Account' : 'Cash',
+        pay.description || '',
+      ]);
+    });
+  });
+  
+  const paymentsData = [...paymentsHeader, ...paymentRows];
   const paymentsSheet = XLSX.utils.aoa_to_sheet(paymentsData);
   paymentsSheet['!cols'] = [
-    colWidth(15), colWidth(14), colWidth(14), colWidth(14), colWidth(35)
+    colWidth(14), colWidth(20), colWidth(14), colWidth(14), colWidth(12), colWidth(35)
   ];
-  XLSX.utils.book_append_sheet(wb, paymentsSheet, 'ClientPayments');
+  XLSX.utils.book_append_sheet(wb, paymentsSheet, 'Client Payments');
   
-  // Supplier Costs sheet
-  const supplierData = [
-    ['ProjectCode', 'Date', 'Amount', 'Supplier', 'Description'],
-    ...state.projects.flatMap(p => 
-      p.supplierCosts.map(c => [
-        p.code,
-        new Date(c.date).toLocaleDateString('en-GB'),
-        c.amount,
-        c.supplier,
-        c.description || ''
-      ])
-    )
+  // ========================================
+  // SHEET 5: Supplier Costs
+  // ========================================
+  const supplierHeader = [
+    ['SUPPLIER COSTS (OUTFLOWS)'],
+    [''],
+    ['Project', 'Client', 'Date', 'Amount', 'Supplier', 'Description'],
   ];
-  if (supplierData.length === 1) {
-    supplierData.push(['', '', '', '', '']);
-  }
+  
+  const supplierRows: (string | number)[][] = [];
+  state.projects.forEach(p => {
+    p.supplierCosts.forEach(c => {
+      supplierRows.push([
+        p.code,
+        p.clientName,
+        new Date(c.date).toLocaleDateString('en-GB'),
+        `£${c.amount.toLocaleString()}`,
+        c.supplier,
+        c.description || '',
+      ]);
+    });
+  });
+  
+  const supplierData = [...supplierHeader, ...supplierRows];
   const supplierSheet = XLSX.utils.aoa_to_sheet(supplierData);
   supplierSheet['!cols'] = [
-    colWidth(15), colWidth(14), colWidth(14), colWidth(25), colWidth(35)
+    colWidth(14), colWidth(20), colWidth(14), colWidth(14), colWidth(25), colWidth(35)
   ];
-  XLSX.utils.book_append_sheet(wb, supplierSheet, 'SupplierCosts');
+  XLSX.utils.book_append_sheet(wb, supplierSheet, 'Supplier Costs');
   
-  // Fixed Costs sheet
+  // ========================================
+  // SHEET 6: Fixed Costs
+  // ========================================
   const fixedCosts = state.operationalCosts.filter(c => c.costType === 'fixed');
-  const fixedData = [
-    ['Date', 'Amount', 'Category', 'Description', 'IsRecurring'],
-    ...fixedCosts.map(c => [
-      new Date(c.date).toLocaleDateString('en-GB'),
-      c.amount,
-      c.category,
-      c.description || '',
-      c.isRecurring ? 'Yes' : 'No'
-    ])
+  const fixedHeader = [
+    ['FIXED OPERATIONAL COSTS'],
+    [''],
+    ['Date', 'Amount', 'Category', 'Description', 'Recurring'],
   ];
-  if (fixedData.length === 1) {
-    fixedData.push(['', '', '', '', '']);
+  
+  const fixedRows = fixedCosts.map(c => [
+    new Date(c.date).toLocaleDateString('en-GB'),
+    `£${c.amount.toLocaleString()}`,
+    c.category,
+    c.description || '',
+    c.isRecurring ? 'Yes' : 'No',
+  ]);
+  
+  const fixedData = [...fixedHeader, ...fixedRows];
+  if (fixedRows.length === 0) {
+    fixedData.push(['No fixed costs recorded', '', '', '', '']);
   }
   const fixedSheet = XLSX.utils.aoa_to_sheet(fixedData);
   fixedSheet['!cols'] = [
     colWidth(14), colWidth(14), colWidth(20), colWidth(35), colWidth(12)
   ];
-  XLSX.utils.book_append_sheet(wb, fixedSheet, 'FixedCosts');
+  XLSX.utils.book_append_sheet(wb, fixedSheet, 'Fixed Costs');
   
-  // Variable Costs sheet
+  // ========================================
+  // SHEET 7: Variable Costs
+  // ========================================
   const variableCosts = state.operationalCosts.filter(c => c.costType === 'variable');
-  const variableData = [
-    ['Date', 'Amount', 'Category', 'Description', 'IsRecurring'],
-    ...variableCosts.map(c => [
-      new Date(c.date).toLocaleDateString('en-GB'),
-      c.amount,
-      c.category,
-      c.description || '',
-      c.isRecurring ? 'Yes' : 'No'
-    ])
+  const variableHeader = [
+    ['VARIABLE OPERATIONAL COSTS'],
+    [''],
+    ['Date', 'Amount', 'Category', 'Description', 'Recurring'],
   ];
-  if (variableData.length === 1) {
-    variableData.push(['', '', '', '', '']);
+  
+  const variableRows = variableCosts.map(c => [
+    new Date(c.date).toLocaleDateString('en-GB'),
+    `£${c.amount.toLocaleString()}`,
+    c.category,
+    c.description || '',
+    c.isRecurring ? 'Yes' : 'No',
+  ]);
+  
+  const variableData = [...variableHeader, ...variableRows];
+  if (variableRows.length === 0) {
+    variableData.push(['No variable costs recorded', '', '', '', '']);
   }
   const variableSheet = XLSX.utils.aoa_to_sheet(variableData);
   variableSheet['!cols'] = [
     colWidth(14), colWidth(14), colWidth(20), colWidth(35), colWidth(12)
   ];
-  XLSX.utils.book_append_sheet(wb, variableSheet, 'VariableCosts');
+  XLSX.utils.book_append_sheet(wb, variableSheet, 'Variable Costs');
   
   // Generate and download
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -295,7 +414,7 @@ export const exportDataToExcel = (state: {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `HOC_Dashboard_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+  link.download = `HOC_Financial_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
