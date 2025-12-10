@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react';
 import type { Project, OperationalCost, DashboardState } from '../types';
 import { generateHOCOperationalCosts } from '../data/seedOperationalCosts';
+import { syncToExcel, isSyncEnabled } from '../services/excelSync';
 
 type Action =
   | { type: 'ADD_PROJECT'; payload: Project }
@@ -144,12 +145,16 @@ const dashboardReducer = (state: DashboardState, action: Action): DashboardState
 interface DashboardContextType {
   state: DashboardState;
   dispatch: React.Dispatch<Action>;
+  lastSyncStatus: { success: boolean; error?: string; time?: Date } | null;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
+  const [lastSyncStatus, setLastSyncStatus] = React.useState<{ success: boolean; error?: string; time?: Date } | null>(null);
+  const isInitialLoad = useRef(true);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -157,13 +162,38 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     dispatch({ type: 'LOAD_STATE', payload: loadedState });
   }, []);
 
-  // Save state to localStorage on every change
+  // Save state to localStorage and sync to Excel on every change
   useEffect(() => {
+    // Skip the initial load - we don't want to sync when first loading
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      return;
+    }
+    
+    // Save to localStorage immediately
     saveToStorage(state);
+    
+    // Debounce Excel sync to avoid too many API calls
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    
+    syncTimeoutRef.current = setTimeout(async () => {
+      if (isSyncEnabled()) {
+        const result = await syncToExcel(state);
+        setLastSyncStatus({ ...result, time: new Date() });
+      }
+    }, 2000); // Wait 2 seconds after last change before syncing
+    
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
   }, [state]);
 
   return (
-    <DashboardContext.Provider value={{ state, dispatch }}>
+    <DashboardContext.Provider value={{ state, dispatch, lastSyncStatus }}>
       {children}
     </DashboardContext.Provider>
   );
@@ -176,4 +206,3 @@ export const useDashboard = () => {
   }
   return context;
 };
-
