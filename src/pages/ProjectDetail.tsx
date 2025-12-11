@@ -587,127 +587,61 @@ const ProjectDetail = () => {
         </div>
       )}
       
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        {/* Payments (Inflows) */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Payments Received</h3>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowPaymentModal(true)}>
-              <Plus size={16} /> Add Payment
-            </button>
-          </div>
-          {project.payments.length > 0 ? (
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Valuation</th>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>VAT</th>
-                    <th>Description</th>
-                    <th style={{ minWidth: '120px' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {project.payments
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .map(payment => (
-                        <tr key={payment.id}>
-                          <td>{formatDate(payment.date)}</td>
-                          <td>{payment.valuationName || '-'}</td>
-                          <td>
-                            <span className={`badge ${payment.type === 'cash' ? 'badge-success' : 'badge-neutral'}`}>
-                              {payment.type === 'cash' ? 'Fee' : 'Account'}
-                            </span>
-                          </td>
-                          <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
-                            +{formatCurrency(payment.amount)}
-                          </td>
-                          <td style={{ color: 'var(--color-text-muted)' }}>
-                            {payment.vatRate ? `${formatCurrency(payment.amount * payment.vatRate)} (${(payment.vatRate * 100).toFixed(0)}%)` : '-'}
-                          </td>
-                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-                            {payment.description || '-'}
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              <button 
-                                className="btn btn-ghost btn-sm" 
-                                onClick={() => handleEditPayment(payment)}
-                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                              >
-                                <Edit3 size={14} /> Edit
-                              </button>
-                              <button 
-                                className="btn btn-ghost btn-sm" 
-                                onClick={() => handleDeletePayment(payment.id)}
-                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="card-body">
-              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>
-                No payments recorded yet
-              </p>
-            </div>
-          )}
+      {/* Payments (Inflows) */}
+      <div className="card mb-4">
+        <div className="card-header">
+          <h3 className="card-title">Payments Received</h3>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowPaymentModal(true)}>
+            <Plus size={16} /> Add Payment
+          </button>
         </div>
-        
-        {/* Supplier Costs (Outflows) */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Supplier Costs</h3>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowCostModal(true)}>
-              <Plus size={16} /> Add Cost
-            </button>
-          </div>
-          {project.supplierCosts.length > 0 ? (
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Supplier</th>
-                    <th>Description</th>
-                    <th>Amount</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {project.supplierCosts
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .map(cost => (
-                      <tr key={cost.id}>
-                        <td>{formatDate(cost.date)}</td>
-                        <td>{cost.supplier}</td>
-                        <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-                          {cost.description || '-'}
+        {project.payments.length > 0 ? (
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Valuation</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>VAT</th>
+                  <th>Description</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {project.payments
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map(payment => (
+                      <tr key={payment.id}>
+                        <td>{formatDate(payment.date)}</td>
+                        <td>{payment.valuationName || '-'}</td>
+                        <td>
+                          <span className={`badge ${payment.type === 'cash' ? 'badge-success' : 'badge-neutral'}`}>
+                            {payment.type === 'cash' ? 'Fee' : 'Account'}
+                          </span>
                         </td>
-                        <td style={{ fontWeight: 500, color: 'var(--color-error)' }}>
-                          -{formatCurrency(cost.amount)}
+                        <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
+                          +{formatCurrency(payment.amount)}
+                        </td>
+                        <td style={{ color: 'var(--color-text-muted)' }}>
+                          {payment.vatRate ? `${formatCurrency(payment.amount * payment.vatRate)} (${(payment.vatRate * 100).toFixed(0)}%)` : '-'}
+                        </td>
+                        <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                          {payment.description || '-'}
                         </td>
                         <td>
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button 
                               className="btn btn-ghost btn-sm" 
-                              onClick={() => handleEditCost(cost)}
+                              onClick={() => handleEditPayment(payment)}
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                             >
                               <Edit3 size={14} /> Edit
                             </button>
                             <button 
                               className="btn btn-ghost btn-sm" 
-                              onClick={() => handleDeleteCost(cost.id)}
+                              onClick={() => handleDeletePayment(payment.id)}
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                             >
                               <Trash2 size={14} />
@@ -715,18 +649,82 @@ const ProjectDetail = () => {
                           </div>
                         </td>
                       </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="card-body">
-              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>
-                No supplier costs recorded yet
-              </p>
-            </div>
-          )}
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="card-body">
+            <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>
+              No payments recorded yet
+            </p>
+          </div>
+        )}
+      </div>
+      
+      {/* Supplier Costs (Outflows) */}
+      <div className="card mb-4">
+        <div className="card-header">
+          <h3 className="card-title">Supplier Costs</h3>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowCostModal(true)}>
+            <Plus size={16} /> Add Cost
+          </button>
         </div>
+        {project.supplierCosts.length > 0 ? (
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Supplier</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {project.supplierCosts
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map(cost => (
+                    <tr key={cost.id}>
+                      <td>{formatDate(cost.date)}</td>
+                      <td>{cost.supplier}</td>
+                      <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                        {cost.description || '-'}
+                      </td>
+                      <td style={{ fontWeight: 500, color: 'var(--color-error)' }}>
+                        -{formatCurrency(cost.amount)}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button 
+                            className="btn btn-ghost btn-sm" 
+                            onClick={() => handleEditCost(cost)}
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                          >
+                            <Edit3 size={14} /> Edit
+                          </button>
+                          <button 
+                            className="btn btn-ghost btn-sm" 
+                            onClick={() => handleDeleteCost(cost.id)}
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="card-body">
+            <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '1rem' }}>
+              No supplier costs recorded yet
+            </p>
+          </div>
+        )}
       </div>
       
       {/* Notes */}
