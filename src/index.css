@@ -22,8 +22,8 @@
   --color-gray-medium: #888888;
   
   /* Status Colors */
-  --color-success: #4ADE80;
-  --color-success-dim: rgba(74, 222, 128, 0.15);
+  --color-success: #6EBF8B;
+  --color-success-dim: rgba(110, 191, 139, 0.15);
   --color-warning: #FBBF24;
   --color-warning-dim: rgba(251, 191, 36, 0.15);
   --color-error: #F87171;
