@@ -21,14 +21,14 @@ const Layout = () => {
             <span>Projects</span>
           </NavLink>
           
-          <NavLink to="/profit" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <PoundSterling />
-            <span>Net Profit</span>
-          </NavLink>
-          
           <NavLink to="/costs" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <Receipt />
             <span>Costs</span>
+          </NavLink>
+          
+          <NavLink to="/profit" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <PoundSterling />
+            <span>Net Profit</span>
           </NavLink>
           
           <NavLink to="/settings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
