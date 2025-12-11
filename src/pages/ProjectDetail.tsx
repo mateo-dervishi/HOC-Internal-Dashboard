@@ -54,6 +54,7 @@ const ProjectDetail = () => {
   // New payment form state
   const [newPayment, setNewPayment] = useState({
     amount: '',
+    vat: '',
     type: 'account' as Payment['type'],
     valuationName: '',
     date: new Date().toISOString().split('T')[0],
@@ -175,6 +176,7 @@ const ProjectDetail = () => {
       id: editingPayment?.id || crypto.randomUUID(),
       date: newPayment.date,
       amount: parseFloat(newPayment.amount) || 0,
+      vat: parseFloat(newPayment.vat) || undefined,
       type: newPayment.type,
       valuationName: newPayment.valuationName || undefined,
       description: newPayment.description,
@@ -201,6 +203,7 @@ const ProjectDetail = () => {
     setEditingPayment(null);
     setNewPayment({
       amount: '',
+      vat: '',
       type: 'account',
       valuationName: '',
       date: new Date().toISOString().split('T')[0],
@@ -212,6 +215,7 @@ const ProjectDetail = () => {
     setEditingPayment(payment);
     setNewPayment({
       amount: payment.amount.toString(),
+      vat: payment.vat?.toString() || '',
       type: payment.type,
       valuationName: payment.valuationName || '',
       date: payment.date,
@@ -600,8 +604,9 @@ const ProjectDetail = () => {
                     <th>Date</th>
                     <th>Valuation</th>
                     <th>Type</th>
-                    <th>Description</th>
                     <th>Amount</th>
+                    <th>VAT</th>
+                    <th>Description</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -617,11 +622,14 @@ const ProjectDetail = () => {
                               {payment.type === 'cash' ? 'Fee' : 'Account'}
                             </span>
                           </td>
-                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-                            {payment.description || '-'}
-                          </td>
                           <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
                             +{formatCurrency(payment.amount)}
+                          </td>
+                          <td style={{ color: 'var(--color-text-muted)' }}>
+                            {payment.vat ? formatCurrency(payment.vat) : '-'}
+                          </td>
+                          <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                            {payment.description || '-'}
                           </td>
                           <td>
                             <div style={{ display: 'flex', gap: '0.25rem' }}>
@@ -947,15 +955,28 @@ const ProjectDetail = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Date</label>
+                    <label className="form-label">VAT (£)</label>
                     <input
-                      type="date"
+                      type="number"
                       className="form-input"
-                      value={newPayment.date}
-                      onChange={(e) => setNewPayment({ ...newPayment, date: e.target.value })}
-                      required
+                      value={newPayment.vat}
+                      onChange={(e) => setNewPayment({ ...newPayment, vat: e.target.value })}
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
                     />
                   </div>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={newPayment.date}
+                    onChange={(e) => setNewPayment({ ...newPayment, date: e.target.value })}
+                    required
+                  />
                 </div>
                 
                 <div className="form-group mb-0">
