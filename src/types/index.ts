@@ -122,13 +122,19 @@ export const calculateProjectFinancials = (project: Project) => {
     totalGross += calc.gross;
   });
   
-  // Payments received
+  // Payments received (including VAT)
   const accountPayments = project.payments
     .filter(p => p.type === 'account')
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => {
+      const vatAmount = p.vatRate ? p.amount * p.vatRate : 0;
+      return sum + p.amount + vatAmount;
+    }, 0);
   const feePayments = project.payments
     .filter(p => p.type === 'cash')
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => {
+      const vatAmount = p.vatRate ? p.amount * p.vatRate : 0;
+      return sum + p.amount + vatAmount;
+    }, 0);
   const totalInflows = accountPayments + feePayments;
   
   // Supplier costs

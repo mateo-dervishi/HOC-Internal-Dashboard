@@ -603,8 +603,9 @@ const ProjectDetail = () => {
                   <th>Date</th>
                   <th>Valuation</th>
                   <th>Type</th>
-                  <th>Amount</th>
+                  <th>Amount (ex VAT)</th>
                   <th>VAT</th>
+                  <th>Total (inc VAT)</th>
                   <th>Description</th>
                   <th>Actions</th>
                 </tr>
@@ -612,7 +613,10 @@ const ProjectDetail = () => {
               <tbody>
                 {project.payments
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .map(payment => (
+                  .map(payment => {
+                    const vatAmount = payment.vatRate ? payment.amount * payment.vatRate : 0;
+                    const totalWithVat = payment.amount + vatAmount;
+                    return (
                       <tr key={payment.id}>
                         <td>{formatDate(payment.date)}</td>
                         <td>{payment.valuationName || '-'}</td>
@@ -621,11 +625,14 @@ const ProjectDetail = () => {
                             {payment.type === 'cash' ? 'Fee' : 'Account'}
                           </span>
                         </td>
-                        <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
-                          +{formatCurrency(payment.amount)}
+                        <td>
+                          {formatCurrency(payment.amount)}
                         </td>
                         <td style={{ color: 'var(--color-text-muted)' }}>
-                          {payment.vatRate ? `${formatCurrency(payment.amount * payment.vatRate)} (${(payment.vatRate * 100).toFixed(0)}%)` : '-'}
+                          {payment.vatRate ? `${formatCurrency(vatAmount)} (${(payment.vatRate * 100).toFixed(0)}%)` : '-'}
+                        </td>
+                        <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
+                          +{formatCurrency(totalWithVat)}
                         </td>
                         <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                           {payment.description || '-'}
@@ -649,7 +656,8 @@ const ProjectDetail = () => {
                           </div>
                         </td>
                       </tr>
-                  ))}
+                    );
+                  })}
               </tbody>
             </table>
           </div>
