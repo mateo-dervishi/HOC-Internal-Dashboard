@@ -10,7 +10,7 @@ import {
   testWebhookConnection,
   syncToExcel 
 } from '../services/excelSync';
-import { generateExcelTemplate, exportDataToExcel, exportForSharePoint } from '../services/excelTemplate';
+import { generateExcelTemplate, exportDataToExcel } from '../services/excelTemplate';
 
 const Settings = () => {
   const { state, dispatch, lastSyncStatus } = useDashboard();
@@ -255,90 +255,13 @@ const Settings = () => {
         </div>
       </div>
       
-      {/* SharePoint Sync */}
+      {/* Excel Templates */}
       <div className="card mb-4">
         <div className="card-header">
-          <h3 className="card-title">SharePoint Sync</h3>
-        </div>
-        <div className="card-body">
-          {/* Main Export Button */}
-          <div style={{ 
-            padding: '1.5rem',
-            background: 'linear-gradient(135deg, var(--color-bg-elevated) 0%, var(--color-bg-hover) 100%)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--color-border)',
-            textAlign: 'center',
-            marginBottom: '1rem'
-          }}>
-            <FileSpreadsheet size={32} style={{ color: 'var(--color-success)', marginBottom: '0.75rem' }} />
-            <h4 style={{ marginBottom: '0.5rem', fontWeight: 500, fontSize: '1rem', color: 'var(--color-text)' }}>
-              Export for SharePoint
-            </h4>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: '0 0 1rem 0', maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' }}>
-              Download your data in the exact format needed for SharePoint. Upload this file to replace the existing one.
-            </p>
-            <button 
-              className="btn btn-primary" 
-              onClick={() => exportForSharePoint(state)}
-              style={{ padding: '0.75rem 2rem', fontSize: '0.9rem' }}
-            >
-              <Download size={18} />
-              Export for SharePoint
-            </button>
-          </div>
-          
-          <div style={{ 
-            padding: '0.875rem 1rem',
-            background: 'var(--color-bg-hover)',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '0.75rem',
-            color: 'var(--color-text-muted)',
-            lineHeight: 1.8
-          }}>
-            <strong style={{ color: 'var(--color-text-secondary)' }}>How to sync:</strong>
-            <br />
-            1. Click "Export for SharePoint" above
-            <br />
-            2. Go to your SharePoint Documents folder
-            <br />
-            3. Upload and replace the existing file
-            <br />
-            4. The Excel tables will update automatically
-          </div>
-        </div>
-      </div>
-      
-      {/* Excel Reports */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h3 className="card-title">Excel Reports</h3>
+          <h3 className="card-title">Excel Templates</h3>
         </div>
         <div className="card-body">
           <div style={{ display: 'grid', gap: '1rem' }}>
-            {/* Export Report */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: '1rem 1.25rem',
-              background: 'var(--color-bg-elevated)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--color-border)'
-            }}>
-              <div>
-                <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-                  Export Financial Report
-                </h4>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
-                  Nicely formatted report with summary &amp; charts
-                </p>
-              </div>
-              <button className="btn btn-secondary" onClick={() => exportDataToExcel(state)}>
-                <Table size={16} />
-                Export Report
-              </button>
-            </div>
-            
             {/* Download Template */}
             <div style={{ 
               display: 'flex', 
@@ -351,17 +274,55 @@ const Settings = () => {
             }}>
               <div>
                 <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-                  Download Blank Template
+                  Download Excel Template
                 </h4>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
-                  Empty template for initial SharePoint setup
+                  Blank template with all sheets ready for SharePoint
                 </p>
               </div>
-              <button className="btn btn-secondary" onClick={generateExcelTemplate}>
+              <button className="btn btn-primary" onClick={generateExcelTemplate}>
                 <FileSpreadsheet size={16} />
-                Download
+                Download Template
               </button>
             </div>
+            
+            {/* Export Current Data */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              padding: '1rem 1.25rem',
+              background: 'var(--color-bg-elevated)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border)'
+            }}>
+              <div>
+                <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                  Export Data to Excel
+                </h4>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
+                  Export all current dashboard data as Excel file
+                </p>
+              </div>
+              <button className="btn btn-secondary" onClick={() => exportDataToExcel(state)}>
+                <Table size={16} />
+                Export Data
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ 
+            marginTop: '1rem',
+            padding: '0.875rem 1rem',
+            background: 'var(--color-bg-hover)',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '0.75rem',
+            color: 'var(--color-text-muted)',
+            lineHeight: 1.6
+          }}>
+            <strong style={{ color: 'var(--color-text-secondary)' }}>Template includes 8 sheets:</strong>
+            <br />
+            Summary • Projects • Valuations • Client Payments • Supplier Costs • Fixed Costs • Variable Costs • Reference
           </div>
         </div>
       </div>

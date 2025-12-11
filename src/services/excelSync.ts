@@ -62,7 +62,7 @@ const transformPaymentForExcel = (project: Project, payment: Project['payments']
     Amount: formatAmount(payment.amount),
     Type: payment.type === 'account' ? 'Account' : 'Cash/Fee',
     Description: payment.description || '',
-    ValuationId: payment.valuationId || '',
+    ValuationName: payment.valuationName || '',
     LastUpdated: new Date().toISOString(),
   };
 };

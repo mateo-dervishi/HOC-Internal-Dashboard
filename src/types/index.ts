@@ -22,7 +22,7 @@ export interface Payment {
   id: string;
   date: string;
   amount: number;
-  valuationId?: string;      // Link to which valuation this payment is for
+  valuationName?: string;    // Name of valuation this payment is for (e.g., "V1", "V2")
   type: 'account' | 'cash';  // Account (VATable) or Fee (non-VAT)
   description?: string;
 }

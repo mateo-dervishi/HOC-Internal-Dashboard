@@ -43,7 +43,6 @@ const ProjectDetail = () => {
   
   // New valuation form state
   const [newValuation, setNewValuation] = useState({
-    name: '',
     date: new Date().toISOString().split('T')[0],
     grandTotal: '',
     fees: '',
@@ -56,7 +55,7 @@ const ProjectDetail = () => {
   const [newPayment, setNewPayment] = useState({
     amount: '',
     type: 'account' as Payment['type'],
-    valuationId: '',
+    valuationName: '',
     date: new Date().toISOString().split('T')[0],
     description: '',
   });
@@ -105,9 +104,11 @@ const ProjectDetail = () => {
   
   const handleAddValuation = (e: React.FormEvent) => {
     e.preventDefault();
+    // Auto-generate name as V1, V2, V3, etc. (or keep existing name when editing)
+    const autoName = editingValuation?.name || `V${project.valuations.length + 1}`;
     const valuation: Valuation = {
       id: editingValuation?.id || crypto.randomUUID(),
-      name: newValuation.name,
+      name: autoName,
       date: newValuation.date,
       grandTotal: parseFloat(newValuation.grandTotal) || 0,
       fees: parseFloat(newValuation.fees) || 0,
@@ -136,7 +137,6 @@ const ProjectDetail = () => {
     setShowValuationModal(false);
     setEditingValuation(null);
     setNewValuation({
-      name: '',
       date: new Date().toISOString().split('T')[0],
       grandTotal: '',
       fees: '',
@@ -149,7 +149,6 @@ const ProjectDetail = () => {
   const handleEditValuation = (valuation: Valuation) => {
     setEditingValuation(valuation);
     setNewValuation({
-      name: valuation.name,
       date: valuation.date,
       grandTotal: valuation.grandTotal.toString(),
       fees: valuation.fees.toString(),
@@ -177,7 +176,7 @@ const ProjectDetail = () => {
       date: newPayment.date,
       amount: parseFloat(newPayment.amount) || 0,
       type: newPayment.type,
-      valuationId: newPayment.valuationId || undefined,
+      valuationName: newPayment.valuationName || undefined,
       description: newPayment.description,
     };
     
@@ -203,7 +202,7 @@ const ProjectDetail = () => {
     setNewPayment({
       amount: '',
       type: 'account',
-      valuationId: '',
+      valuationName: '',
       date: new Date().toISOString().split('T')[0],
       description: '',
     });
@@ -214,7 +213,7 @@ const ProjectDetail = () => {
     setNewPayment({
       amount: payment.amount.toString(),
       type: payment.type,
-      valuationId: payment.valuationId || '',
+      valuationName: payment.valuationName || '',
       date: payment.date,
       description: payment.description || '',
     });
@@ -320,9 +319,6 @@ const ProjectDetail = () => {
   const collectionRate = financials.totalGross > 0 
     ? (financials.totalInflows / financials.totalGross) * 100 
     : 0;
-  
-  // Suggest next valuation name
-  const nextValuationName = `V${project.valuations.length + 1}`;
 
   return (
     <div>
@@ -467,7 +463,6 @@ const ProjectDetail = () => {
           <button className="btn btn-secondary btn-sm" onClick={() => {
             setEditingValuation(null);
             setNewValuation({
-              name: nextValuationName,
               date: new Date().toISOString().split('T')[0],
               grandTotal: '',
               fees: '',
@@ -630,12 +625,10 @@ const ProjectDetail = () => {
                 <tbody>
                   {project.payments
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .map(payment => {
-                      const valuation = project.valuations.find(v => v.id === payment.valuationId);
-                      return (
+                    .map(payment => (
                         <tr key={payment.id}>
                           <td>{formatDate(payment.date)}</td>
-                          <td>{valuation?.name || '-'}</td>
+                          <td>{payment.valuationName || '-'}</td>
                           <td>
                             <span className={`badge ${payment.type === 'cash' ? 'badge-success' : 'badge-neutral'}`}>
                               {payment.type === 'cash' ? 'Fee' : 'Account'}
@@ -666,8 +659,7 @@ const ProjectDetail = () => {
                             </div>
                           </td>
                         </tr>
-                      );
-                    })}
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -777,28 +769,18 @@ const ProjectDetail = () => {
             </div>
             <form onSubmit={handleAddValuation}>
               <div className="modal-body">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Valuation Name</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g., V1 - Deposit"
-                      value={newValuation.name}
-                      onChange={(e) => setNewValuation({ ...newValuation, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Date</label>
-                    <input
-                      type="date"
-                      className="form-input"
-                      value={newValuation.date}
-                      onChange={(e) => setNewValuation({ ...newValuation, date: e.target.value })}
-                      required
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={newValuation.date}
+                    onChange={(e) => setNewValuation({ ...newValuation, date: e.target.value })}
+                    required
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                    This will be saved as V{editingValuation ? project.valuations.findIndex(v => v.id === editingValuation.id) + 1 : project.valuations.length + 1}
+                  </small>
                 </div>
                 
                 <div className="form-group">
@@ -969,17 +951,14 @@ const ProjectDetail = () => {
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Valuation (Optional)</label>
-                    <select
-                      className="form-select"
-                      value={newPayment.valuationId}
-                      onChange={(e) => setNewPayment({ ...newPayment, valuationId: e.target.value })}
-                    >
-                      <option value="">-- Select Valuation --</option>
-                      {project.valuations.map(v => (
-                        <option key={v.id} value={v.id}>{v.name}</option>
-                      ))}
-                    </select>
+                    <label className="form-label">Valuation Name</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g., V1, V2"
+                      value={newPayment.valuationName}
+                      onChange={(e) => setNewPayment({ ...newPayment, valuationName: e.target.value })}
+                    />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Payment Type</label>
