@@ -555,8 +555,8 @@ const ProjectDetail = () => {
             background: 'var(--color-light-gray)'
           }}>
             <div>
-              <div className="stat-label">Account Payments</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--color-black)', fontFamily: 'Inter, sans-serif' }}>
+              <div className="stat-label" style={{ color: 'var(--color-success)' }}>Account Payments</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--color-success)', fontFamily: 'Inter, sans-serif' }}>
                 {formatCurrency(financials.accountPayments)}
               </div>
             </div>
