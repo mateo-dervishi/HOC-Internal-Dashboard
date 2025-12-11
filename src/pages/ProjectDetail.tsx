@@ -926,31 +926,6 @@ const ProjectDetail = () => {
               <div className="modal-body">
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Amount (£)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={newPayment.amount}
-                      onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Date</label>
-                    <input
-                      type="date"
-                      className="form-input"
-                      value={newPayment.date}
-                      onChange={(e) => setNewPayment({ ...newPayment, date: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="form-row">
-                  <div className="form-group">
                     <label className="form-label">Valuation Name</label>
                     <input
                       type="text"
@@ -972,6 +947,31 @@ const ProjectDetail = () => {
                         <option value="cash">Fee</option>
                       )}
                     </select>
+                  </div>
+                </div>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Amount (£)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={newPayment.amount}
+                      onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={newPayment.date}
+                      onChange={(e) => setNewPayment({ ...newPayment, date: e.target.value })}
+                      required
+                    />
                   </div>
                 </div>
                 
