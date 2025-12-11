@@ -607,7 +607,7 @@ const ProjectDetail = () => {
                     <th>Amount</th>
                     <th>VAT</th>
                     <th>Description</th>
-                    <th></th>
+                    <th style={{ minWidth: '120px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
