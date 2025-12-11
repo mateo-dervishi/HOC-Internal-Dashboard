@@ -535,22 +535,6 @@ const ProjectDetail = () => {
                     );
                   })}
               </tbody>
-              <tfoot>
-                <tr style={{ background: 'var(--color-light-gray)' }}>
-                  <td colSpan={2}><strong>Totals</strong></td>
-                  <td><strong>{formatCurrency(financials.totalGrandTotal)}</strong></td>
-                  {project.hasCashPayment && (
-                    <td style={{ color: 'var(--color-success)' }}><strong>{formatCurrency(financials.totalFees)}</strong></td>
-                  )}
-                  <td style={{ color: 'var(--color-error)' }}>
-                    <strong>{financials.totalOmissions > 0 ? `-${formatCurrency(financials.totalOmissions)}` : '-'}</strong>
-                  </td>
-                  <td><strong>{formatCurrency(financials.totalSubtotal)}</strong></td>
-                  <td><strong>{formatCurrency(financials.totalVat)}</strong></td>
-                  <td><strong>{formatCurrency(financials.totalGross)}</strong></td>
-                  <td></td>
-                </tr>
-              </tfoot>
             </table>
           </div>
         ) : (
