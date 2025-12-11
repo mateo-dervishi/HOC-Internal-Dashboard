@@ -457,7 +457,7 @@ const ProjectDetail = () => {
       {/* Valuations Section */}
       <div className="card mb-4">
         <div className="card-header">
-          <h3 className="card-title">
+          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center' }}>
             <FileText size={20} style={{ marginRight: 8, opacity: 0.7 }} />
             Contract Value
           </h3>
@@ -544,7 +544,7 @@ const ProjectDetail = () => {
         ) : (
           <div className="card-body">
             <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>
-              No contract value yet. Add your contract value to track this project.
+              No contract value yet.
             </p>
           </div>
         )}
