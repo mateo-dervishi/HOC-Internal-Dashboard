@@ -420,11 +420,8 @@ const ProjectDetail = () => {
       {/* Stats Grid */}
       <div className="stat-grid">
         <div className="stat-card">
-          <div className="stat-label">Gross</div>
+          <div className="stat-label">Gross Value</div>
           <div className="stat-value">{formatCurrency(financials.totalGross)}</div>
-          <div className="stat-change">
-            {project.valuations.length} valuation{project.valuations.length !== 1 ? 's' : ''}
-          </div>
         </div>
         
         <div className="stat-card success">
@@ -460,20 +457,22 @@ const ProjectDetail = () => {
             <FileText size={20} style={{ marginRight: 8, opacity: 0.7 }} />
             Contract Value
           </h3>
-          <button className="btn btn-secondary btn-sm" onClick={() => {
-            setEditingValuation(null);
-            setNewValuation({
-              date: new Date().toISOString().split('T')[0],
-              grandTotal: '',
-              fees: '',
-              omissions: '',
-              vatRate: '20',
-              notes: '',
-            });
-            setShowValuationModal(true);
-          }}>
-            <Plus size={16} /> Add Valuation
-          </button>
+          {project.valuations.length === 0 && (
+            <button className="btn btn-secondary btn-sm" onClick={() => {
+              setEditingValuation(null);
+              setNewValuation({
+                date: new Date().toISOString().split('T')[0],
+                grandTotal: '',
+                fees: '',
+                omissions: '',
+                vatRate: '20',
+                notes: '',
+              });
+              setShowValuationModal(true);
+            }}>
+              <Plus size={16} /> Add
+            </button>
+          )}
         </div>
         {project.valuations.length > 0 ? (
           <div className="table-container">
@@ -487,7 +486,7 @@ const ProjectDetail = () => {
                   <th>Omissions</th>
                   <th>Subtotal</th>
                   <th>VAT</th>
-                  <th>Gross</th>
+                  <th>Gross Value</th>
                   <th></th>
                 </tr>
               </thead>
