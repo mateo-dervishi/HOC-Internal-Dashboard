@@ -544,7 +544,7 @@ const ProjectDetail = () => {
         ) : (
           <div className="card-body">
             <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>
-              No valuations yet. Add your first valuation to track project value.
+              No contract value yet. Add your contract value to track this project.
             </p>
           </div>
         )}
