@@ -132,7 +132,7 @@ export const exportDataToExcel = (state: {
       id: string;
       date: string;
       amount: number;
-      type: string;
+      type: 'account' | 'cash';
       valuationName?: string;
       description?: string;
     }>;
@@ -170,7 +170,7 @@ export const exportDataToExcel = (state: {
     totalGross += financials.totalGross;
     totalInflows += financials.totalInflows;
     totalSupplierCosts += financials.totalSupplierCosts;
-    totalProjectProfit += financials.profit;
+    totalProjectProfit += financials.grossProfit;
   });
   
   const totalFixedCosts = state.operationalCosts
@@ -228,7 +228,7 @@ export const exportDataToExcel = (state: {
   
   const projectRows = state.projects.map(p => {
     const fin = calculateProjectFinancials(p);
-    const margin = fin.totalGross > 0 ? ((fin.profit / fin.totalGross) * 100).toFixed(1) + '%' : '0%';
+    const margin = fin.totalGross > 0 ? ((fin.grossProfit / fin.totalGross) * 100).toFixed(1) + '%' : '0%';
     return [
       p.code,
       p.clientName,
@@ -238,7 +238,7 @@ export const exportDataToExcel = (state: {
       `£${fin.totalGross.toLocaleString()}`,
       `£${fin.totalInflows.toLocaleString()}`,
       `£${fin.totalSupplierCosts.toLocaleString()}`,
-      `£${fin.profit.toLocaleString()}`,
+      `£${fin.grossProfit.toLocaleString()}`,
       margin,
       new Date(p.createdAt).toLocaleDateString('en-GB'),
     ];
