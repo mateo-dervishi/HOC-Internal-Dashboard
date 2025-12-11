@@ -54,7 +54,7 @@ const ProjectDetail = () => {
   // New payment form state
   const [newPayment, setNewPayment] = useState({
     amount: '',
-    vat: '',
+    vatRate: '20',
     type: 'account' as Payment['type'],
     valuationName: '',
     date: new Date().toISOString().split('T')[0],
@@ -176,7 +176,7 @@ const ProjectDetail = () => {
       id: editingPayment?.id || crypto.randomUUID(),
       date: newPayment.date,
       amount: parseFloat(newPayment.amount) || 0,
-      vat: parseFloat(newPayment.vat) || undefined,
+      vatRate: (parseFloat(newPayment.vatRate) || 0) / 100,
       type: newPayment.type,
       valuationName: newPayment.valuationName || undefined,
       description: newPayment.description,
@@ -203,7 +203,7 @@ const ProjectDetail = () => {
     setEditingPayment(null);
     setNewPayment({
       amount: '',
-      vat: '',
+      vatRate: '20',
       type: 'account',
       valuationName: '',
       date: new Date().toISOString().split('T')[0],
@@ -215,7 +215,7 @@ const ProjectDetail = () => {
     setEditingPayment(payment);
     setNewPayment({
       amount: payment.amount.toString(),
-      vat: payment.vat?.toString() || '',
+      vatRate: payment.vatRate ? (payment.vatRate * 100).toString() : '20',
       type: payment.type,
       valuationName: payment.valuationName || '',
       date: payment.date,
@@ -626,7 +626,7 @@ const ProjectDetail = () => {
                             +{formatCurrency(payment.amount)}
                           </td>
                           <td style={{ color: 'var(--color-text-muted)' }}>
-                            {payment.vat ? formatCurrency(payment.vat) : '-'}
+                            {payment.vatRate ? `${formatCurrency(payment.amount * payment.vatRate)} (${(payment.vatRate * 100).toFixed(0)}%)` : '-'}
                           </td>
                           <td style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                             {payment.description || '-'}
@@ -955,15 +955,16 @@ const ProjectDetail = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">VAT (£)</label>
+                    <label className="form-label">VAT Rate (%)</label>
                     <input
                       type="number"
                       className="form-input"
-                      value={newPayment.vat}
-                      onChange={(e) => setNewPayment({ ...newPayment, vat: e.target.value })}
+                      value={newPayment.vatRate}
+                      onChange={(e) => setNewPayment({ ...newPayment, vatRate: e.target.value })}
                       min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                      max="100"
+                      step="0.5"
+                      placeholder="20"
                     />
                   </div>
                 </div>

@@ -22,7 +22,7 @@ export interface Payment {
   id: string;
   date: string;
   amount: number;
-  vat?: number;              // VAT amount for this payment
+  vatRate?: number;          // VAT rate as decimal (e.g., 0.20 for 20%)
   valuationName?: string;    // Name of valuation this payment is for (e.g., "V1", "V2")
   type: 'account' | 'cash';  // Account (VATable) or Fee (non-VAT)
   description?: string;
