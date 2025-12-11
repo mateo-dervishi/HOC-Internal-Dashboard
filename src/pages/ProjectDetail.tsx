@@ -617,7 +617,7 @@ const ProjectDetail = () => {
                         <td>{formatDate(payment.date)}</td>
                         <td>{payment.valuationName || '-'}</td>
                         <td>
-                          <span className={`badge ${payment.type === 'cash' ? 'badge-success' : 'badge-neutral'}`}>
+                          <span className="badge badge-neutral">
                             {payment.type === 'cash' ? 'Fee' : 'Account'}
                           </span>
                         </td>
