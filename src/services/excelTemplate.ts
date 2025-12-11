@@ -116,7 +116,7 @@ export const exportDataToExcel = (state: {
     code: string;
     clientName: string;
     address?: string;
-    status: string;
+    status: 'active' | 'completed' | 'on_hold';
     hasCashPayment: boolean;
     valuations: Array<{
       id: string;
