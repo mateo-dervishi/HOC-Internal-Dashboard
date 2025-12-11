@@ -486,7 +486,6 @@ const ProjectDetail = () => {
                   <th>Name</th>
                   <th>Date</th>
                   <th>Grand Total</th>
-                  {project.hasCashPayment && <th>Fees</th>}
                   <th>Omissions</th>
                   <th>Subtotal</th>
                   <th>VAT</th>
@@ -504,9 +503,6 @@ const ProjectDetail = () => {
                         <td style={{ fontWeight: 500 }}>{valuation.name}</td>
                         <td>{formatDate(valuation.date)}</td>
                         <td>{formatCurrency(calc.grandTotal)}</td>
-                        {project.hasCashPayment && (
-                          <td style={{ color: 'var(--color-success)' }}>{formatCurrency(calc.fees)}</td>
-                        )}
                         <td style={{ color: calc.omissions > 0 ? 'var(--color-error)' : 'inherit' }}>
                           {calc.omissions > 0 ? `-${formatCurrency(calc.omissions)}` : '-'}
                         </td>
@@ -797,24 +793,6 @@ const ProjectDetail = () => {
                   </small>
                 </div>
                 
-                {project.hasCashPayment && (
-                  <div className="form-group">
-                    <label className="form-label">Fees (£) - No VAT</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      placeholder="0.00"
-                      value={newValuation.fees}
-                      onChange={(e) => setNewValuation({ ...newValuation, fees: e.target.value })}
-                      min="0"
-                      step="0.01"
-                    />
-                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                      Fees portion - will be subtracted from VATable amount
-                    </small>
-                  </div>
-                )}
-                
                 <div className="form-group">
                   <label className="form-label">Omissions (£)</label>
                   <input
@@ -859,28 +837,21 @@ const ProjectDetail = () => {
                     <div className="stat-label" style={{ marginBottom: '0.75rem' }}>Preview</div>
                     {(() => {
                       const grandTotal = parseFloat(newValuation.grandTotal) || 0;
-                      const fees = project.hasCashPayment ? (parseFloat(newValuation.fees) || 0) : 0;
                       const omissions = parseFloat(newValuation.omissions) || 0;
                       const vatRate = (parseFloat(newValuation.vatRate) || 20) / 100;
-                      const subtotal = grandTotal - fees - omissions;
+                      const subtotal = grandTotal - omissions;
                       const vat = subtotal * vatRate;
                       const gross = grandTotal + vat - omissions;
                       
                       return (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontSize: '0.9rem' }}>
                           <div>Grand Total:</div><div style={{ textAlign: 'right' }}>{formatCurrency(grandTotal)}</div>
-                          {project.hasCashPayment && fees > 0 && (
-                            <><div>Fees:</div><div style={{ textAlign: 'right', color: 'var(--color-success)' }}>-{formatCurrency(fees)}</div></>
-                          )}
                           {omissions > 0 && (
                             <><div>Omissions:</div><div style={{ textAlign: 'right', color: 'var(--color-error)' }}>-{formatCurrency(omissions)}</div></>
                           )}
                           <div>Subtotal:</div><div style={{ textAlign: 'right' }}>{formatCurrency(subtotal)}</div>
                           <div>VAT ({(vatRate * 100).toFixed(0)}%):</div><div style={{ textAlign: 'right' }}>{formatCurrency(vat)}</div>
-                          <div style={{ fontWeight: 600 }}>Gross:</div><div style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(gross)}</div>
-                          {project.hasCashPayment && fees > 0 && (
-                            <><div style={{ fontWeight: 600 }}>+ Fees:</div><div style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-success)' }}>{formatCurrency(fees)}</div></>
-                          )}
+                          <div style={{ fontWeight: 600 }}>Gross Value:</div><div style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(gross)}</div>
                         </div>
                       );
                     })()}
