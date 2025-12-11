@@ -697,18 +697,18 @@ const ProjectDetail = () => {
                           -{formatCurrency(cost.amount)}
                         </td>
                         <td>
-                          <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button 
                               className="btn btn-ghost btn-sm" 
                               onClick={() => handleEditCost(cost)}
-                              style={{ padding: '0.25rem' }}
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                             >
-                              <Edit3 size={14} />
+                              <Edit3 size={14} /> Edit
                             </button>
                             <button 
                               className="btn btn-ghost btn-sm" 
                               onClick={() => handleDeleteCost(cost.id)}
-                              style={{ padding: '0.25rem' }}
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                             >
                               <Trash2 size={14} />
                             </button>
