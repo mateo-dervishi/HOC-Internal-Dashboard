@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Session } from '@supabase/supabase-js';
+import { MsalProvider, useIsAuthenticated, useMsal } from '@azure/msal-react';
+import { PublicClientApplication, EventType, EventMessage, AuthenticationResult } from '@azure/msal-browser';
 import { DashboardProvider } from './context/DashboardContext';
 import Layout from './components/Layout';
 import Overview from './pages/Overview';
@@ -10,31 +10,34 @@ import NetProfit from './pages/NetProfit';
 import OperationalCosts from './pages/OperationalCosts';
 import Settings from './pages/Settings';
 import { Login } from './components/Login';
-import { supabase } from './config/authConfig';
+import { msalConfig } from './config/authConfig';
 import './index.css';
 
-function App() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+// Initialize MSAL instance
+const msalInstance = new PublicClientApplication(msalConfig);
 
-  useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
+// Handle initialization and set active account
+msalInstance.initialize().then(() => {
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    msalInstance.setActiveAccount(accounts[0]);
+  }
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setLoading(false);
-    });
+  msalInstance.addEventCallback((event: EventMessage) => {
+    if (event.eventType === EventType.LOGIN_SUCCESS && event.payload) {
+      const payload = event.payload as AuthenticationResult;
+      msalInstance.setActiveAccount(payload.account);
+    }
+  });
+});
 
-    return () => subscription.unsubscribe();
-  }, []);
+// Auth wrapper component
+const AuthenticatedApp = () => {
+  const isAuthenticated = useIsAuthenticated();
+  const { inProgress } = useMsal();
 
-  // Show loading spinner
-  if (loading) {
+  // Show loading while checking auth
+  if (inProgress !== 'none') {
     return (
       <div style={{ 
         minHeight: '100vh', 
@@ -53,15 +56,15 @@ function App() {
             borderRadius: '50%',
             margin: '0 auto 1rem'
           }} />
-          <p>Loading...</p>
+          <p>Authenticating...</p>
         </div>
       </div>
     );
   }
 
   // Show login if not authenticated
-  if (!session) {
-    return <Login onLogin={() => {}} />;
+  if (!isAuthenticated) {
+    return <Login />;
   }
 
   // Show dashboard if authenticated
@@ -80,6 +83,14 @@ function App() {
         </Routes>
       </BrowserRouter>
     </DashboardProvider>
+  );
+};
+
+function App() {
+  return (
+    <MsalProvider instance={msalInstance}>
+      <AuthenticatedApp />
+    </MsalProvider>
   );
 }
 

@@ -1,23 +1,16 @@
-import { useState, useEffect } from 'react';
 import { Download, Upload, FileSpreadsheet, Table, LogOut, User } from 'lucide-react';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { useMsal } from '@azure/msal-react';
 import { useDashboard } from '../context/DashboardContext';
 import { generateExcelTemplate, exportDataToExcel } from '../services/excelTemplate';
-import { supabase } from '../config/authConfig';
 
 const Settings = () => {
   const { state, dispatch } = useDashboard();
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const { instance, accounts } = useMsal();
+  const activeAccount = accounts[0];
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
-  }, []);
-
-  const handleLogout = async () => {
+  const handleLogout = () => {
     if (confirm('Are you sure you want to sign out?')) {
-      await supabase.auth.signOut();
+      instance.logoutPopup();
     }
   };
   
@@ -285,7 +278,7 @@ const Settings = () => {
         <div className="card-body">
           <div style={{ display: 'grid', gap: '1rem' }}>
             {/* Logged in user */}
-            {user && (
+            {activeAccount && (
               <div style={{ 
                 display: 'flex', 
                 alignItems: 'center',
@@ -309,10 +302,10 @@ const Settings = () => {
                 </div>
                 <div>
                   <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                    {activeAccount.name || 'User'}
                   </h4>
                   <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
-                    {user.email}
+                    {activeAccount.username}
                   </p>
                 </div>
               </div>

@@ -1,33 +1,50 @@
-import { createClient } from '@supabase/supabase-js';
+import { Configuration, LogLevel } from '@azure/msal-browser';
 
 // ============================================================
-// SUPABASE CONFIGURATION
-// ============================================================
-// Get these from your Supabase project settings:
-// 1. Go to https://supabase.com/dashboard
-// 2. Select your project
-// 3. Go to Settings → API
-// 4. Copy the URL and anon/public key
+// AZURE AD CONFIGURATION - HOC Internal Dashboard
 // ============================================================
 
-// REPLACE THESE WITH YOUR SUPABASE VALUES
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';           // e.g., https://xxxxx.supabase.co
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // The "anon" / "public" key
+// Your Azure AD App Registration values
+export const AZURE_CLIENT_ID = 'bafc7170-b610-464e-891e-6014e0d6dc08';
+export const AZURE_TENANT_ID = '19c5fbd0-b817-4474-a78b-2d48ff2c5ec5';
 
-// Allowed email domains (only these can sign up/login)
-export const ALLOWED_EMAIL_DOMAINS = ['houseofclarence.com'];
+// Redirect URI (your Vercel deployment)
+export const REDIRECT_URI = 'https://hoc-internal-dashboard.vercel.app';
 
-// Create Supabase client
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// Check if Supabase is configured
-export const isSupabaseConfigured = () => {
-  return SUPABASE_URL !== 'YOUR_SUPABASE_URL' && 
-         SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+// MSAL Configuration
+export const msalConfig: Configuration = {
+  auth: {
+    clientId: AZURE_CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${AZURE_TENANT_ID}`,
+    redirectUri: REDIRECT_URI,
+    postLogoutRedirectUri: REDIRECT_URI,
+    navigateToLoginRequestUrl: true,
+  },
+  cache: {
+    cacheLocation: 'localStorage',
+    storeAuthStateInCookie: false,
+  },
+  system: {
+    loggerOptions: {
+      loggerCallback: (level, message, containsPii) => {
+        if (containsPii) return;
+        switch (level) {
+          case LogLevel.Error:
+            console.error(message);
+            break;
+          case LogLevel.Warning:
+            console.warn(message);
+            break;
+          default:
+            break;
+        }
+      },
+      logLevel: LogLevel.Warning,
+    },
+  },
 };
 
-// Validate email domain
-export const isAllowedEmail = (email: string): boolean => {
-  const domain = email.split('@')[1]?.toLowerCase();
-  return ALLOWED_EMAIL_DOMAINS.some(allowed => domain === allowed.toLowerCase());
+// Scopes for login - basic user profile info
+export const loginRequest = {
+  scopes: ['User.Read'],
 };
