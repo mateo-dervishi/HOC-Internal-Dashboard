@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Plus, FolderKanban, Search, Loader2 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { calculateProjectFinancials } from '../types';
-import type { Project } from '../types';
 
 const Projects = () => {
   const { state, addProject, loading } = useDashboard();

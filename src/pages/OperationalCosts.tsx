@@ -149,7 +149,6 @@ const OperationalCosts = () => {
       await addOperationalCost(costData);
     }
     
-    setSaving(false);
     setShowModal(false);
     setEditingCost(null);
     setIsCreatingNewCategory(false);

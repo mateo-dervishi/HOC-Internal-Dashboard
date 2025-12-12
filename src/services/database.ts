@@ -30,7 +30,7 @@ export const fetchProjects = async (): Promise<Project[]> => {
         code: p.code,
         clientName: p.client_name,
         address: p.address || '',
-        status: p.status as 'active' | 'completed' | 'on-hold',
+        status: (p.status === 'on-hold' ? 'on_hold' : p.status) as 'active' | 'completed' | 'on_hold',
         hasCashPayment: p.has_cash_payment,
         valuations,
         payments,
