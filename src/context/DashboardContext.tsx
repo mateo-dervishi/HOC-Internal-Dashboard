@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react';
 import type { Project, OperationalCost, DashboardState } from '../types';
 import { generateHOCOperationalCosts } from '../data/seedOperationalCosts';
+import { generateExcelBlob } from '../services/excelTemplate';
+
+// Power Automate webhook URL for auto-sync
+const WEBHOOK_URL = 'https://default19c5fbd0b8174474a78b2d48ff2c5e.c5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8305f76f507445b4be118d0548f99db5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ct9MLR8rUytSwO11awmQXQT_PHqEfh06NoxEPmALV_0';
 
 type Action =
   | { type: 'ADD_PROJECT'; payload: Project }
@@ -46,8 +50,58 @@ const loadFromStorage = (): DashboardState => {
 const saveToStorage = (state: DashboardState) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    
+    // Also save a timestamped backup (keep last 10 backups)
+    const backupKey = `hoc_backup_${Date.now()}`;
+    localStorage.setItem(backupKey, JSON.stringify(state));
+    
+    // Clean up old backups (keep only last 10)
+    const allKeys = Object.keys(localStorage).filter(k => k.startsWith('hoc_backup_'));
+    if (allKeys.length > 10) {
+      allKeys.sort().slice(0, allKeys.length - 10).forEach(k => localStorage.removeItem(k));
+    }
   } catch (e) {
     console.error('Failed to save state to storage:', e);
+  }
+};
+
+// Convert blob to base64
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      const base64Data = base64.split(',')[1];
+      resolve(base64Data);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+// Auto-sync to SharePoint
+const syncToSharePoint = async (state: DashboardState) => {
+  try {
+    const excelBlob = generateExcelBlob({
+      projects: state.projects,
+      operationalCosts: state.operationalCosts,
+    });
+    
+    const base64Excel = await blobToBase64(excelBlob);
+    
+    await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: 'HOC_Dashboard_Sync.xlsx',
+        fileContent: base64Excel,
+        timestamp: new Date().toISOString(),
+      }),
+    });
+    
+    console.log('✅ Auto-synced to SharePoint');
+  } catch (error) {
+    console.error('❌ Auto-sync failed:', error);
   }
 };
 
@@ -151,6 +205,7 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
   const isInitialLoad = useRef(true);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -158,7 +213,7 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     dispatch({ type: 'LOAD_STATE', payload: loadedState });
   }, []);
 
-  // Save state to localStorage on every change
+  // Save state to localStorage and auto-sync to SharePoint on every change
   useEffect(() => {
     // Skip the initial load
     if (isInitialLoad.current) {
@@ -166,8 +221,23 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
       return;
     }
     
-    // Save to localStorage
+    // Save to localStorage immediately
     saveToStorage(state);
+    
+    // Debounce SharePoint sync (wait 5 seconds after last change)
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    
+    syncTimeoutRef.current = setTimeout(() => {
+      syncToSharePoint(state);
+    }, 5000); // Auto-sync 5 seconds after last change
+    
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
   }, [state]);
 
   return (
