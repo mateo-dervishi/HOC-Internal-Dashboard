@@ -19,7 +19,22 @@ import type { Payment, SupplierCost, Valuation } from '../types';
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { state, dispatch } = useDashboard();
+  const { 
+    state, 
+    loading,
+    updateProject,
+    deleteProject: deleteProjectDb,
+    addValuation,
+    updateValuation,
+    deleteValuation,
+    addPayment,
+    updatePayment,
+    deletePayment,
+    addSupplierCost,
+    updateSupplierCost,
+    deleteSupplierCost,
+  } = useDashboard();
+  const [saving, setSaving] = useState(false);
   
   const project = state.projects.find(p => p.id === id);
   
@@ -103,12 +118,12 @@ const ProjectDetail = () => {
     });
   };
   
-  const handleAddValuation = (e: React.FormEvent) => {
+  const handleAddValuation = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Auto-generate name as V1, V2, V3, etc. (or keep existing name when editing)
+    setSaving(true);
+    
     const autoName = editingValuation?.name || `V${project.valuations.length + 1}`;
-    const valuation: Valuation = {
-      id: editingValuation?.id || crypto.randomUUID(),
+    const valuationData = {
       name: autoName,
       date: newValuation.date,
       grandTotal: parseFloat(newValuation.grandTotal) || 0,
@@ -119,22 +134,12 @@ const ProjectDetail = () => {
     };
     
     if (editingValuation) {
-      // Update existing valuation
-      const updatedValuations = project.valuations.map(v => 
-        v.id === editingValuation.id ? valuation : v
-      );
-      dispatch({
-        type: 'UPDATE_PROJECT',
-        payload: { ...project, valuations: updatedValuations },
-      });
+      await updateValuation(project.id, { ...valuationData, id: editingValuation.id });
     } else {
-      // Add new valuation
-      dispatch({
-        type: 'UPDATE_PROJECT',
-        payload: { ...project, valuations: [...project.valuations, valuation] },
-      });
+      await addValuation(project.id, valuationData);
     }
     
+    setSaving(false);
     setShowValuationModal(false);
     setEditingValuation(null);
     setNewValuation({
@@ -160,20 +165,17 @@ const ProjectDetail = () => {
     setShowValuationModal(true);
   };
   
-  const handleDeleteValuation = (valuationId: string) => {
+  const handleDeleteValuation = async (valuationId: string) => {
     if (confirm('Are you sure you want to delete this valuation?')) {
-      const updatedValuations = project.valuations.filter(v => v.id !== valuationId);
-      dispatch({
-        type: 'UPDATE_PROJECT',
-        payload: { ...project, valuations: updatedValuations },
-      });
+      await deleteValuation(project.id, valuationId);
     }
   };
   
-  const handleAddPayment = (e: React.FormEvent) => {
+  const handleAddPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payment: Payment = {
-      id: editingPayment?.id || crypto.randomUUID(),
+    setSaving(true);
+    
+    const paymentData = {
       date: newPayment.date,
       amount: parseFloat(newPayment.amount) || 0,
       vatRate: (parseFloat(newPayment.vatRate) || 0) / 100,
@@ -183,22 +185,12 @@ const ProjectDetail = () => {
     };
     
     if (editingPayment) {
-      // Update existing payment
-      const updatedPayments = project.payments.map(p => 
-        p.id === editingPayment.id ? payment : p
-      );
-      dispatch({
-        type: 'UPDATE_PROJECT',
-        payload: { ...project, payments: updatedPayments },
-      });
+      await updatePayment(project.id, { ...paymentData, id: editingPayment.id });
     } else {
-      // Add new payment
-      dispatch({
-        type: 'ADD_PAYMENT',
-        payload: { projectId: project.id, payment },
-      });
+      await addPayment(project.id, paymentData);
     }
     
+    setSaving(false);
     setShowPaymentModal(false);
     setEditingPayment(null);
     setNewPayment({
@@ -224,10 +216,11 @@ const ProjectDetail = () => {
     setShowPaymentModal(true);
   };
   
-  const handleAddCost = (e: React.FormEvent) => {
+  const handleAddCost = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cost: SupplierCost = {
-      id: editingCost?.id || crypto.randomUUID(),
+    setSaving(true);
+    
+    const costData = {
       date: newCost.date,
       amount: parseFloat(newCost.amount) || 0,
       supplier: newCost.supplier,
@@ -235,22 +228,12 @@ const ProjectDetail = () => {
     };
     
     if (editingCost) {
-      // Update existing cost
-      const updatedCosts = project.supplierCosts.map(c => 
-        c.id === editingCost.id ? cost : c
-      );
-      dispatch({
-        type: 'UPDATE_PROJECT',
-        payload: { ...project, supplierCosts: updatedCosts },
-      });
+      await updateSupplierCost(project.id, { ...costData, id: editingCost.id });
     } else {
-      // Add new cost
-      dispatch({
-        type: 'ADD_SUPPLIER_COST',
-        payload: { projectId: project.id, cost },
-      });
+      await addSupplierCost(project.id, costData);
     }
     
+    setSaving(false);
     setShowCostModal(false);
     setEditingCost(null);
     setNewCost({
@@ -272,50 +255,39 @@ const ProjectDetail = () => {
     setShowCostModal(true);
   };
   
-  const handleDeletePayment = (paymentId: string) => {
+  const handleDeletePaymentClick = async (paymentId: string) => {
     if (confirm('Are you sure you want to delete this payment?')) {
-      dispatch({
-        type: 'DELETE_PAYMENT',
-        payload: { projectId: project.id, paymentId },
-      });
+      await deletePayment(project.id, paymentId);
     }
   };
   
-  const handleDeleteCost = (costId: string) => {
+  const handleDeleteCost = async (costId: string) => {
     if (confirm('Are you sure you want to delete this supplier cost?')) {
-      dispatch({
-        type: 'DELETE_SUPPLIER_COST',
-        payload: { projectId: project.id, costId },
-      });
+      await deleteSupplierCost(project.id, costId);
     }
   };
   
-  const handleSaveEdit = () => {
-    dispatch({
-      type: 'UPDATE_PROJECT',
-      payload: {
-        ...project,
-        code: editForm.code,
-        clientName: editForm.clientName,
-        address: editForm.address,
-        status: editForm.status as 'active' | 'completed' | 'on_hold',
-        hasCashPayment: editForm.hasCashPayment,
-        notes: editForm.notes,
-      },
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    await updateProject({
+      ...project,
+      code: editForm.code,
+      clientName: editForm.clientName,
+      address: editForm.address,
+      status: editForm.status as 'active' | 'completed' | 'on_hold',
+      hasCashPayment: editForm.hasCashPayment,
     });
+    setSaving(false);
     setIsEditing(false);
   };
   
-  const handleToggleCP = () => {
-    dispatch({
-      type: 'UPDATE_PROJECT',
-      payload: { ...project, hasCashPayment: !project.hasCashPayment },
-    });
+  const handleToggleCP = async () => {
+    await updateProject({ ...project, hasCashPayment: !project.hasCashPayment });
   };
   
-  const handleDeleteProject = () => {
+  const handleDeleteProject = async () => {
     if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-      dispatch({ type: 'DELETE_PROJECT', payload: project.id });
+      await deleteProjectDb(project.id);
       navigate('/projects');
     }
   };
@@ -651,7 +623,7 @@ const ProjectDetail = () => {
                             </button>
                             <button 
                               className="btn btn-ghost btn-sm" 
-                              onClick={() => handleDeletePayment(payment.id)}
+                              onClick={() => handleDeletePaymentClick(payment.id)}
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
                             >
                               <Trash2 size={14} />

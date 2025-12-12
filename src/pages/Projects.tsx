@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, FolderKanban, Search } from 'lucide-react';
+import { Plus, FolderKanban, Search, Loader2 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { calculateProjectFinancials } from '../types';
-import type { Project } from '../types';
 
 const Projects = () => {
-  const { state, dispatch } = useDashboard();
+  const { state, addProject, loading } = useDashboard();
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [saving, setSaving] = useState(false);
   
   // New project form state - simplified
   const [newProject, setNewProject] = useState({
@@ -19,24 +19,19 @@ const Projects = () => {
     notes: '',
   });
   
-  const handleCreateProject = (e: React.FormEvent) => {
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
     
-    const project: Project = {
-      id: crypto.randomUUID(),
+    await addProject({
       code: newProject.code,
       clientName: newProject.clientName,
       address: newProject.address,
-      hasCashPayment: false,  // Default to no fees, can enable later
-      valuations: [],
-      payments: [],
-      supplierCosts: [],
-      createdAt: new Date().toISOString(),
+      hasCashPayment: false,
       status: 'active',
-      notes: newProject.notes,
-    };
+    });
     
-    dispatch({ type: 'ADD_PROJECT', payload: project });
+    setSaving(false);
     setShowModal(false);
     setNewProject({
       code: '',
@@ -113,7 +108,14 @@ const Projects = () => {
       </div>
       
       {/* Projects Grid */}
-      {filteredProjects.length > 0 ? (
+      {loading ? (
+        <div className="card">
+          <div className="empty-state">
+            <Loader2 size={32} className="spinning" style={{ color: 'var(--color-text-muted)' }} />
+            <p className="empty-state-text">Loading projects...</p>
+          </div>
+        </div>
+      ) : filteredProjects.length > 0 ? (
         <div className="projects-grid">
           {filteredProjects.map(project => {
             const financials = calculateProjectFinancials(project);
@@ -272,11 +274,18 @@ const Projects = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>
+                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)} disabled={saving}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Create Project
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 size={16} className="spinning" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Project'
+                  )}
                 </button>
               </div>
             </form>

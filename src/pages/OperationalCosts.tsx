@@ -5,8 +5,9 @@ import type { OperationalCost, CostType } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const OperationalCosts = () => {
-  const { state, dispatch } = useDashboard();
+  const { state, addOperationalCost, updateOperationalCost, deleteOperationalCost, loading } = useDashboard();
   const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editingCost, setEditingCost] = useState<OperationalCost | null>(null);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [selectedYear, setSelectedYear] = useState<number>(2025);
@@ -131,24 +132,26 @@ const OperationalCosts = () => {
     setExpandedMonths(newExpanded);
   };
   
-  const handleAddCost = (e: React.FormEvent) => {
+  const handleAddCost = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cost: OperationalCost = {
-      id: editingCost?.id || crypto.randomUUID(),
+    setSaving(true);
+    
+    const costData = {
       date: newCost.date,
       amount: parseFloat(newCost.amount) || 0,
       category: newCost.category,
-      costType: newCost.costType,
+      type: newCost.costType,
       description: newCost.description,
       isRecurring: newCost.isRecurring,
     };
     
     if (editingCost) {
-      dispatch({ type: 'UPDATE_OPERATIONAL_COST', payload: cost });
+      await updateOperationalCost({ ...costData, id: editingCost.id } as OperationalCost);
     } else {
-      dispatch({ type: 'ADD_OPERATIONAL_COST', payload: cost });
+      await addOperationalCost(costData as Omit<OperationalCost, 'id'>);
     }
     
+    setSaving(false);
     setShowModal(false);
     setEditingCost(null);
     setIsCreatingNewCategory(false);
@@ -176,9 +179,9 @@ const OperationalCosts = () => {
     setShowModal(true);
   };
   
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this cost?')) {
-      dispatch({ type: 'DELETE_OPERATIONAL_COST', payload: id });
+      await deleteOperationalCost(id);
     }
   };
   
