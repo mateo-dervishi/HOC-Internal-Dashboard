@@ -578,6 +578,7 @@ export const generateExcelBlob = (state: {
 }): Blob => {
   const wb = XLSX.utils.book_new();
   const today = new Date().toLocaleDateString('en-GB');
+  const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   
   // Calculate totals for summary
   let totalGross = 0;
@@ -602,52 +603,79 @@ export const generateExcelBlob = (state: {
   const totalOpCosts = totalFixedCosts + totalVariableCosts;
   const netProfit = totalProjectProfit - totalOpCosts;
   
-  // SHEET 1: Overview/Summary
-  const summaryData = [
-    ['HOUSE OF CLARENCE - DASHBOARD SYNC'],
+  // ============================================================
+  // SHEET 1: OVERVIEW - Dashboard Summary
+  // ============================================================
+  const summaryData: (string | number)[][] = [
     [''],
-    ['Last Updated:', today + ' ' + new Date().toLocaleTimeString('en-GB')],
+    ['', 'HOUSE OF CLARENCE'],
+    ['', 'Financial Dashboard'],
+    [''],
+    ['', `Last Updated: ${today} at ${time}`],
     [''],
     [''],
-    ['OVERVIEW'],
-    ['Metric', 'Value'],
-    ['Total Projects', state.projects.length],
-    ['Active Projects', state.projects.filter(p => p.status === 'active').length],
-    ['Completed Projects', state.projects.filter(p => p.status === 'completed').length],
-    ['On Hold', state.projects.filter(p => p.status === 'on_hold').length],
+    ['', '─────────────────────────────────────────'],
+    ['', 'QUICK STATS'],
+    ['', '─────────────────────────────────────────'],
     [''],
-    ['FINANCIALS'],
-    ['Total Gross (Contract Values)', `£${totalGross.toLocaleString()}`],
-    ['Total Client Payments', `£${totalInflows.toLocaleString()}`],
-    ['Total Outstanding', `£${(totalGross - totalInflows).toLocaleString()}`],
-    ['Total Supplier Costs', `£${totalSupplierCosts.toLocaleString()}`],
-    ['Project Profit', `£${totalProjectProfit.toLocaleString()}`],
+    ['', 'Total Projects:', state.projects.length, '', 'Active:', state.projects.filter(p => p.status === 'active').length],
+    ['', 'Completed:', state.projects.filter(p => p.status === 'completed').length, '', 'On Hold:', state.projects.filter(p => p.status === 'on_hold').length],
     [''],
-    ['OPERATIONAL COSTS'],
-    ['Fixed Costs', `£${totalFixedCosts.toLocaleString()}`],
-    ['Variable Costs', `£${totalVariableCosts.toLocaleString()}`],
-    ['Total Operational', `£${totalOpCosts.toLocaleString()}`],
     [''],
-    ['NET PROFIT', `£${netProfit.toLocaleString()}`],
+    ['', '─────────────────────────────────────────'],
+    ['', 'PROJECT FINANCIALS'],
+    ['', '─────────────────────────────────────────'],
+    [''],
+    ['', 'Total Contract Value (Gross)', '', `£${totalGross.toLocaleString()}`],
+    [''],
+    ['', 'Total Payments Received', '', `£${totalInflows.toLocaleString()}`],
+    [''],
+    ['', 'Total Outstanding', '', `£${(totalGross - totalInflows).toLocaleString()}`],
+    [''],
+    ['', 'Total Supplier Costs', '', `£${totalSupplierCosts.toLocaleString()}`],
+    [''],
+    ['', 'Project Profit', '', `£${totalProjectProfit.toLocaleString()}`],
+    [''],
+    [''],
+    ['', '─────────────────────────────────────────'],
+    ['', 'OPERATIONAL COSTS'],
+    ['', '─────────────────────────────────────────'],
+    [''],
+    ['', 'Fixed Costs (Rent, Insurance, etc.)', '', `£${totalFixedCosts.toLocaleString()}`],
+    [''],
+    ['', 'Variable Costs (Salaries, etc.)', '', `£${totalVariableCosts.toLocaleString()}`],
+    [''],
+    ['', 'Total Operational Costs', '', `£${totalOpCosts.toLocaleString()}`],
+    [''],
+    [''],
+    ['', '═══════════════════════════════════════'],
+    ['', 'NET PROFIT', '', `£${netProfit.toLocaleString()}`],
+    ['', '═══════════════════════════════════════'],
   ];
   
   const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-  summarySheet['!cols'] = [colWidth(30), colWidth(25)];
+  summarySheet['!cols'] = [colWidth(5), colWidth(35), colWidth(15), colWidth(20), colWidth(15), colWidth(15)];
   XLSX.utils.book_append_sheet(wb, summarySheet, 'Overview');
   
-  // SHEET 2: All Projects
-  const projectsHeader = [
-    ['ALL PROJECTS'],
+  // ============================================================
+  // SHEET 2: ALL PROJECTS
+  // ============================================================
+  const projectsHeader: (string | number)[][] = [
     [''],
-    ['Code', 'Client', 'Address', 'Status', 'Fees Enabled', 'Gross', 'Inflows', 'Outstanding', 'Costs', 'Profit'],
+    ['', 'ALL PROJECTS'],
+    [''],
+    [''],
+    ['', 'Project Code', 'Client Name', 'Address', 'Status', 'Fees', 'Gross Value', 'Received', 'Outstanding', 'Supplier Costs', 'Profit'],
+    ['', '───────────', '───────────', '───────────', '───────────', '───────────', '───────────', '───────────', '───────────', '───────────', '───────────'],
   ];
   
-  const projectRows = state.projects.map(p => {
+  const projectRows: (string | number)[][] = state.projects.map(p => {
     const fin = calculateProjectFinancials(p);
     return [
+      '',
       p.code,
       p.clientName,
-      p.address || '',
+      p.address || '-',
       p.status.charAt(0).toUpperCase() + p.status.slice(1),
       p.hasCashPayment ? 'Yes' : 'No',
       `£${fin.totalGross.toLocaleString()}`,
@@ -658,130 +686,186 @@ export const generateExcelBlob = (state: {
     ];
   });
   
-  const projectsData = [...projectsHeader, ...projectRows];
+  // Add spacing between rows
+  const spacedProjectRows: (string | number)[][] = [];
+  projectRows.forEach(row => {
+    spacedProjectRows.push(row);
+    spacedProjectRows.push(['']);
+  });
+  
+  const projectsData = [...projectsHeader, ...spacedProjectRows];
   const projectsSheet = XLSX.utils.aoa_to_sheet(projectsData);
   projectsSheet['!cols'] = [
-    colWidth(14), colWidth(20), colWidth(30), colWidth(12), colWidth(12),
-    colWidth(14), colWidth(14), colWidth(14), colWidth(14), colWidth(14)
+    colWidth(3), colWidth(16), colWidth(22), colWidth(30), colWidth(12), colWidth(8),
+    colWidth(16), colWidth(16), colWidth(16), colWidth(16), colWidth(16)
   ];
   XLSX.utils.book_append_sheet(wb, projectsSheet, 'Projects');
   
-  // SHEET 3: All Costs (Fixed + Variable)
-  const costsHeader = [
-    ['OPERATIONAL COSTS'],
+  // ============================================================
+  // SHEET 3: OPERATIONAL COSTS
+  // ============================================================
+  const costsHeader: (string | number)[][] = [
     [''],
-    ['Date', 'Type', 'Category', 'Amount', 'Description', 'Recurring'],
+    ['', 'OPERATIONAL COSTS'],
+    [''],
+    ['', `Total Fixed: £${totalFixedCosts.toLocaleString()}`, '', '', `Total Variable: £${totalVariableCosts.toLocaleString()}`],
+    [''],
+    [''],
+    ['', 'Date', 'Type', 'Category', 'Amount', 'Description', 'Recurring'],
+    ['', '───────────', '───────────', '───────────', '───────────', '───────────', '───────────'],
   ];
   
-  const costsRows = state.operationalCosts
+  const costsRows: (string | number)[][] = state.operationalCosts
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .map(c => [
+      '',
       new Date(c.date).toLocaleDateString('en-GB'),
       c.costType === 'fixed' ? 'Fixed' : 'Variable',
       c.category,
       `£${c.amount.toLocaleString()}`,
-      c.description || '',
+      c.description || '-',
       c.isRecurring ? 'Yes' : 'No',
     ]);
   
   const costsData = [...costsHeader, ...costsRows];
   const costsSheet = XLSX.utils.aoa_to_sheet(costsData);
   costsSheet['!cols'] = [
-    colWidth(14), colWidth(12), colWidth(20), colWidth(14), colWidth(35), colWidth(10)
+    colWidth(3), colWidth(14), colWidth(12), colWidth(22), colWidth(16), colWidth(40), colWidth(12)
   ];
   XLSX.utils.book_append_sheet(wb, costsSheet, 'Costs');
   
-  // Individual project sheets
+  // ============================================================
+  // INDIVIDUAL PROJECT SHEETS
+  // ============================================================
   state.projects.forEach(p => {
     const fin = calculateProjectFinancials(p);
     const sheetName = `P-${p.code}`.slice(0, 31).replace(/[\\/*?[\]]/g, '');
     
     const projectData: (string | number)[][] = [
-      [`PROJECT: ${p.code}`],
       [''],
-      ['CLIENT DETAILS'],
-      ['Client Name', p.clientName],
-      ['Address', p.address || 'N/A'],
-      ['Status', p.status.charAt(0).toUpperCase() + p.status.slice(1)],
-      ['Fees Enabled', p.hasCashPayment ? 'Yes' : 'No'],
+      ['', `PROJECT: ${p.code}`],
+      ['', '═══════════════════════════════════════════════════════════════'],
       [''],
-      ['FINANCIAL SUMMARY'],
-      ['Gross Value', `£${fin.totalGross.toLocaleString()}`],
-      ['Total Received', `£${fin.totalInflows.toLocaleString()}`],
-      ['Outstanding', `£${(fin.totalGross - fin.totalInflows).toLocaleString()}`],
-      ['Supplier Costs', `£${fin.totalSupplierCosts.toLocaleString()}`],
-      ['Project Profit', `£${fin.grossProfit.toLocaleString()}`],
+      [''],
+      ['', '┌─────────────────────────────────────┐'],
+      ['', '│  CLIENT DETAILS                     │'],
+      ['', '└─────────────────────────────────────┘'],
+      [''],
+      ['', 'Client Name:', '', p.clientName],
+      ['', 'Address:', '', p.address || 'N/A'],
+      ['', 'Status:', '', p.status.charAt(0).toUpperCase() + p.status.slice(1)],
+      ['', 'Fees Enabled:', '', p.hasCashPayment ? 'Yes' : 'No'],
+      [''],
+      [''],
+      ['', '┌─────────────────────────────────────┐'],
+      ['', '│  FINANCIAL SUMMARY                  │'],
+      ['', '└─────────────────────────────────────┘'],
+      [''],
+      ['', 'Gross Value:', '', `£${fin.totalGross.toLocaleString()}`],
+      ['', 'Total Received:', '', `£${fin.totalInflows.toLocaleString()}`],
+      ['', 'Outstanding:', '', `£${(fin.totalGross - fin.totalInflows).toLocaleString()}`],
+      [''],
+      ['', 'Supplier Costs:', '', `£${fin.totalSupplierCosts.toLocaleString()}`],
+      ['', 'Project Profit:', '', `£${fin.grossProfit.toLocaleString()}`],
+      [''],
       [''],
     ];
     
     // Contract Values
-    projectData.push(['CONTRACT VALUES']);
+    projectData.push(['', '┌─────────────────────────────────────┐']);
+    projectData.push(['', '│  CONTRACT VALUES                    │']);
+    projectData.push(['', '└─────────────────────────────────────┘']);
+    projectData.push(['']);
+    
     if (p.valuations.length > 0) {
-      projectData.push(['Name', 'Date', 'Grand Total', 'Fees', 'Omissions', 'Subtotal', 'VAT', 'Gross']);
+      projectData.push(['', 'Name', 'Date', 'Grand Total', 'Fees', 'Omissions', 'Subtotal', 'VAT', 'Gross']);
+      projectData.push(['', '─────', '─────', '─────', '─────', '─────', '─────', '─────', '─────']);
       p.valuations.forEach(v => {
         const omissions = v.omissions || 0;
         const subtotal = v.grandTotal - v.fees - omissions;
         const vat = subtotal * v.vatRate;
         const gross = v.grandTotal - omissions + vat;
         projectData.push([
+          '',
           v.name,
           new Date(v.date).toLocaleDateString('en-GB'),
           `£${v.grandTotal.toLocaleString()}`,
           `£${v.fees.toLocaleString()}`,
-          `£${omissions.toLocaleString()}`,
+          omissions > 0 ? `£${omissions.toLocaleString()}` : '-',
           `£${subtotal.toLocaleString()}`,
           `£${vat.toLocaleString()}`,
           `£${gross.toLocaleString()}`,
         ]);
+        projectData.push(['']);
       });
     } else {
-      projectData.push(['No contract values recorded']);
+      projectData.push(['', 'No contract values recorded']);
     }
+    projectData.push(['']);
     projectData.push(['']);
     
     // Payments
-    projectData.push(['PAYMENTS RECEIVED']);
+    projectData.push(['', '┌─────────────────────────────────────┐']);
+    projectData.push(['', '│  PAYMENTS RECEIVED                  │']);
+    projectData.push(['', '└─────────────────────────────────────┘']);
+    projectData.push(['']);
+    
     if (p.payments.length > 0) {
-      projectData.push(['Date', 'Valuation', 'Type', 'Amount', 'VAT', 'Total', 'Description']);
+      projectData.push(['', 'Date', 'Valuation', 'Type', 'Amount (ex VAT)', 'VAT', 'Total (inc VAT)', 'Description']);
+      projectData.push(['', '─────', '─────', '─────', '─────', '─────', '─────', '─────']);
       p.payments.forEach(pay => {
         const vatRate = pay.type === 'cash' ? 0 : (pay.vatRate || 0);
         const vatAmount = pay.amount * vatRate;
         const total = pay.amount + vatAmount;
         projectData.push([
+          '',
           new Date(pay.date).toLocaleDateString('en-GB'),
           pay.valuationName || '-',
           pay.type === 'account' ? 'Account' : 'Fee',
           `£${pay.amount.toLocaleString()}`,
-          `£${vatAmount.toLocaleString()} (${(vatRate * 100).toFixed(0)}%)`,
+          vatRate > 0 ? `£${vatAmount.toLocaleString()} (${(vatRate * 100).toFixed(0)}%)` : '-',
           `£${total.toLocaleString()}`,
           pay.description || '-',
         ]);
+        projectData.push(['']);
       });
+      projectData.push(['']);
+      projectData.push(['', '', '', '', '', 'TOTAL:', `£${fin.totalInflows.toLocaleString()}`]);
     } else {
-      projectData.push(['No payments recorded']);
+      projectData.push(['', 'No payments recorded']);
     }
+    projectData.push(['']);
     projectData.push(['']);
     
     // Supplier Costs
-    projectData.push(['SUPPLIER COSTS']);
+    projectData.push(['', '┌─────────────────────────────────────┐']);
+    projectData.push(['', '│  SUPPLIER COSTS                     │']);
+    projectData.push(['', '└─────────────────────────────────────┘']);
+    projectData.push(['']);
+    
     if (p.supplierCosts.length > 0) {
-      projectData.push(['Date', 'Supplier', 'Amount', 'Description']);
+      projectData.push(['', 'Date', 'Supplier', 'Amount', 'Description']);
+      projectData.push(['', '─────', '─────', '─────', '─────']);
       p.supplierCosts.forEach(c => {
         projectData.push([
+          '',
           new Date(c.date).toLocaleDateString('en-GB'),
           c.supplier,
           `£${c.amount.toLocaleString()}`,
           c.description || '-',
         ]);
+        projectData.push(['']);
       });
+      projectData.push(['']);
+      projectData.push(['', '', 'TOTAL:', `£${fin.totalSupplierCosts.toLocaleString()}`]);
     } else {
-      projectData.push(['No supplier costs recorded']);
+      projectData.push(['', 'No supplier costs recorded']);
     }
     
     const projectSheet = XLSX.utils.aoa_to_sheet(projectData);
     projectSheet['!cols'] = [
-      colWidth(18), colWidth(14), colWidth(14), colWidth(14),
-      colWidth(16), colWidth(14), colWidth(14), colWidth(30)
+      colWidth(3), colWidth(16), colWidth(14), colWidth(16), colWidth(16),
+      colWidth(16), colWidth(16), colWidth(16), colWidth(30)
     ];
     XLSX.utils.book_append_sheet(wb, projectSheet, sheetName);
   });
