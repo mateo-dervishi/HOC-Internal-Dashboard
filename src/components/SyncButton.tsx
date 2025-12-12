@@ -1,24 +1,17 @@
-import { useState, useEffect } from 'react';
-import { RefreshCw, Check, Cloud, Download, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { RefreshCw, Check, Cloud, AlertCircle } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { generateExcelBlob } from '../services/excelTemplate';
 import { syncToPowerAutomate } from '../services/powerAutomateSync';
 
-const WEBHOOK_URL_KEY = 'hoc_power_automate_webhook';
+// Power Automate webhook URL - syncs to SharePoint
+const WEBHOOK_URL = 'https://default19c5fbd0b8174474a78b2d48ff2c5e.c5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8305f76f507445b4be118d0548f99db5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ct9MLR8rUytSwO11awmQXQT_PHqEfh06NoxEPmALV_0';
 
 export const SyncButton = () => {
   const { state } = useDashboard();
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState<string>('');
   const [statusMessage, setStatusMessage] = useState<string>('');
-
-  // Load webhook URL from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem(WEBHOOK_URL_KEY);
-    if (saved) setWebhookUrl(saved);
-  }, []);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -26,38 +19,18 @@ export const SyncButton = () => {
     setStatusMessage('');
     
     try {
-      if (webhookUrl) {
-        // Sync to Power Automate (SharePoint)
-        const result = await syncToPowerAutomate(webhookUrl, {
-          projects: state.projects,
-          operationalCosts: state.operationalCosts,
-        });
-        
-        if (result.success) {
-          setSyncStatus('success');
-          setStatusMessage('Synced to SharePoint!');
-        } else {
-          setSyncStatus('error');
-          setStatusMessage(result.message);
-        }
-      } else {
-        // Download Excel locally
-        const blob = generateExcelBlob({
-          projects: state.projects,
-          operationalCosts: state.operationalCosts,
-        });
-        
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `HOC_Dashboard_Sync_${new Date().toISOString().split('T')[0]}.xlsx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
+      // Sync to Power Automate (SharePoint)
+      const result = await syncToPowerAutomate(WEBHOOK_URL, {
+        projects: state.projects,
+        operationalCosts: state.operationalCosts,
+      });
+      
+      if (result.success) {
         setSyncStatus('success');
-        setStatusMessage('Downloaded!');
+        setStatusMessage('Synced!');
+      } else {
+        setSyncStatus('error');
+        setStatusMessage(result.message);
       }
       
       // Update sync time
@@ -78,8 +51,6 @@ export const SyncButton = () => {
       setSyncing(false);
     }
   };
-
-  const isSharePointMode = !!webhookUrl;
 
   return (
     <div style={{ 
@@ -116,15 +87,10 @@ export const SyncButton = () => {
             <AlertCircle size={16} />
             Error
           </>
-        ) : isSharePointMode ? (
+        ) : (
           <>
             <Cloud size={16} />
             Sync to SharePoint
-          </>
-        ) : (
-          <>
-            <Download size={16} />
-            Download Excel
           </>
         )}
       </button>
@@ -136,9 +102,7 @@ export const SyncButton = () => {
         fontSize: '0.7rem', 
         color: 'var(--color-text-muted)',
       }}>
-        <span>
-          {isSharePointMode ? '☁️ SharePoint' : '💾 Local'}
-        </span>
+        <span>☁️ SharePoint</span>
         {lastSyncTime && (
           <span>Last: {lastSyncTime}</span>
         )}
@@ -155,26 +119,5 @@ export const SyncButton = () => {
       )}
     </div>
   );
-};
-
-// Export for use in Settings page
-export const useWebhookUrl = () => {
-  const [webhookUrl, setWebhookUrlState] = useState<string>('');
-
-  useEffect(() => {
-    const saved = localStorage.getItem(WEBHOOK_URL_KEY);
-    if (saved) setWebhookUrlState(saved);
-  }, []);
-
-  const setWebhookUrl = (url: string) => {
-    setWebhookUrlState(url);
-    if (url) {
-      localStorage.setItem(WEBHOOK_URL_KEY, url);
-    } else {
-      localStorage.removeItem(WEBHOOK_URL_KEY);
-    }
-  };
-
-  return { webhookUrl, setWebhookUrl };
 };
 

@@ -1,74 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Download, Upload, Trash2, AlertTriangle, RotateCcw, Link, CheckCircle, XCircle, RefreshCw, FileSpreadsheet, Table, Cloud } from 'lucide-react';
+import { useState } from 'react';
+import { Download, Upload, Trash2, AlertTriangle, RotateCcw, FileSpreadsheet, Table } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { generateHOCOperationalCosts } from '../data/seedOperationalCosts';
 import { generateExcelTemplate, exportDataToExcel } from '../services/excelTemplate';
-import { syncToPowerAutomate } from '../services/powerAutomateSync';
-
-const WEBHOOK_URL_KEY = 'hoc_power_automate_webhook';
 
 const Settings = () => {
   const { state, dispatch } = useDashboard();
-  
-  // Power Automate Sync State
-  const [webhookUrl, setWebhookUrlState] = useState('');
-  const [testingConnection, setTestingConnection] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message?: string } | null>(null);
-  const [manualSyncing, setManualSyncing] = useState(false);
-  
-  // Load webhook URL on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(WEBHOOK_URL_KEY);
-    if (saved) setWebhookUrlState(saved);
-  }, []);
-  
-  const handleSaveWebhookUrl = () => {
-    if (webhookUrl) {
-      localStorage.setItem(WEBHOOK_URL_KEY, webhookUrl);
-    } else {
-      localStorage.removeItem(WEBHOOK_URL_KEY);
-    }
-    setTestResult(null);
-    alert('Webhook URL saved!');
-  };
-  
-  const handleTestConnection = async () => {
-    if (!webhookUrl) {
-      setTestResult({ success: false, message: 'Please enter a webhook URL first' });
-      return;
-    }
-    
-    setTestingConnection(true);
-    setTestResult(null);
-    
-    const result = await syncToPowerAutomate(webhookUrl, {
-      projects: state.projects,
-      operationalCosts: state.operationalCosts,
-    });
-    
-    setTestResult({ success: result.success, message: result.message });
-    setTestingConnection(false);
-  };
-  
-  const handleManualSync = async () => {
-    if (!webhookUrl) {
-      alert('Please configure a webhook URL first');
-      return;
-    }
-    
-    setManualSyncing(true);
-    const result = await syncToPowerAutomate(webhookUrl, {
-      projects: state.projects,
-      operationalCosts: state.operationalCosts,
-    });
-    
-    if (result.success) {
-      alert('Data synced to SharePoint successfully!');
-    } else {
-      alert(`Sync failed: ${result.message}`);
-    }
-    setManualSyncing(false);
-  };
   
   const handleExportData = () => {
     const dataStr = JSON.stringify(state, null, 2);
@@ -136,111 +73,6 @@ const Settings = () => {
         <p className="page-subtitle">Manage your dashboard data and preferences</p>
       </header>
       
-      {/* SharePoint Sync via Power Automate */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Cloud size={18} />
-            SharePoint Sync
-          </h3>
-        </div>
-        <div className="card-body">
-          <div style={{ display: 'grid', gap: '1.25rem' }}>
-            {/* Info Box */}
-            <div style={{ 
-              padding: '1rem',
-              background: 'var(--color-bg-hover)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '0.8rem',
-              color: 'var(--color-text-muted)',
-              lineHeight: 1.6
-            }}>
-              <strong style={{ color: 'var(--color-text-secondary)' }}>How it works:</strong>
-              <br />
-              1. Create a Power Automate flow with an HTTP trigger
-              <br />
-              2. Add actions to create/update Excel in SharePoint
-              <br />
-              3. Paste the webhook URL below
-              <br />
-              4. Use the "Sync to SharePoint" button in the sidebar
-            </div>
-            
-            {/* Webhook URL */}
-            <div style={{ 
-              padding: '1.25rem',
-              background: 'var(--color-bg-elevated)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--color-border)'
-            }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-                Power Automate Webhook URL
-              </label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="url"
-                  className="form-input"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrlState(e.target.value)}
-                  placeholder="https://prod-xx.westeurope.logic.azure.com/workflows/..."
-                  style={{ flex: 1, fontSize: '0.85rem' }}
-                />
-                <button className="btn btn-primary" onClick={handleSaveWebhookUrl}>
-                  Save
-                </button>
-              </div>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: '0.5rem', marginBottom: 0 }}>
-                {webhookUrl ? '✓ Webhook configured - use sidebar button to sync' : 'No webhook URL - downloads Excel locally'}
-              </p>
-            </div>
-            
-            {/* Test & Sync Buttons */}
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button 
-                className="btn btn-secondary" 
-                onClick={handleTestConnection}
-                disabled={testingConnection || !webhookUrl}
-                style={{ flex: 1 }}
-              >
-                {testingConnection ? (
-                  <><RefreshCw size={16} className="spinning" /> Testing...</>
-                ) : (
-                  <><Link size={16} /> Test Connection</>
-                )}
-              </button>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleManualSync}
-                disabled={manualSyncing || !webhookUrl}
-                style={{ flex: 1 }}
-              >
-                {manualSyncing ? (
-                  <><RefreshCw size={16} className="spinning" /> Syncing...</>
-                ) : (
-                  <><Cloud size={16} /> Sync Now</>
-                )}
-              </button>
-            </div>
-            
-            {/* Test Result */}
-            {testResult && (
-              <div style={{ 
-                padding: '0.875rem 1rem',
-                background: testResult.success ? 'var(--color-success-dim)' : 'var(--color-error-dim)',
-                borderRadius: 'var(--radius-md)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                fontSize: '0.85rem',
-                color: testResult.success ? 'var(--color-success)' : 'var(--color-error)'
-              }}>
-                {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                {testResult.message}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
       
       {/* Excel Templates */}
       <div className="card mb-4">
