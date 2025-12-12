@@ -1,6 +1,7 @@
-import { Download, Upload, FileSpreadsheet, Table } from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, Table, LogOut } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { generateExcelTemplate, exportDataToExcel } from '../services/excelTemplate';
+import { logout } from '../components/Login';
 
 const Settings = () => {
   const { state, dispatch } = useDashboard();
@@ -233,7 +234,7 @@ const Settings = () => {
       </div>
       
       {/* About */}
-      <div className="card">
+      <div className="card mb-4">
         <div className="card-header">
           <h3 className="card-title">About</h3>
         </div>
@@ -257,6 +258,44 @@ const Settings = () => {
             <strong style={{ color: 'var(--color-text)' }}>Payment Terms:</strong> 20/70/10 (Upfront / Before Production / On Delivery)
             <br />
             <strong style={{ color: 'var(--color-text)' }}>Fee Split:</strong> 60% Account / 40% Fees
+          </div>
+        </div>
+      </div>
+      
+      {/* Account */}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Account</h3>
+        </div>
+        <div className="card-body">
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            padding: '1rem 1.25rem',
+            background: 'var(--color-bg-elevated)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border)'
+          }}>
+            <div>
+              <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                Sign Out
+              </h4>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
+                End your current session
+              </p>
+            </div>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => {
+                if (confirm('Are you sure you want to sign out?')) {
+                  logout();
+                }
+              }}
+            >
+              <LogOut size={16} />
+              Sign Out
+            </button>
           </div>
         </div>
       </div>
