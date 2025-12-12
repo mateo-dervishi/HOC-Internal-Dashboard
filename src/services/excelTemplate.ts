@@ -409,6 +409,111 @@ export const exportDataToExcel = (state: {
   ];
   XLSX.utils.book_append_sheet(wb, variableSheet, 'Variable Costs');
   
+  // ========================================
+  // INDIVIDUAL PROJECT SHEETS
+  // ========================================
+  state.projects.forEach(p => {
+    const fin = calculateProjectFinancials(p);
+    
+    // Sheet name (max 31 chars, no special chars)
+    const sheetName = `P-${p.code}`.slice(0, 31).replace(/[\\/*?[\]]/g, '');
+    
+    const projectData: (string | number)[][] = [
+      [`PROJECT: ${p.code}`],
+      [''],
+      ['CLIENT DETAILS'],
+      ['Client Name', p.clientName],
+      ['Address', p.address || 'N/A'],
+      ['Status', p.status.charAt(0).toUpperCase() + p.status.slice(1)],
+      ['Fees Enabled', p.hasCashPayment ? 'Yes' : 'No'],
+      ['Created', new Date(p.createdAt).toLocaleDateString('en-GB')],
+      [''],
+      ['FINANCIAL SUMMARY'],
+      ['Gross Value', `£${fin.totalGross.toLocaleString()}`],
+      ['Total Inflows', `£${fin.totalInflows.toLocaleString()}`],
+      ['Supplier Costs', `£${fin.totalSupplierCosts.toLocaleString()}`],
+      ['Project Profit', `£${fin.grossProfit.toLocaleString()}`],
+      ['Outstanding', `£${(fin.totalGross - fin.totalInflows).toLocaleString()}`],
+      [''],
+    ];
+    
+    // Contract Values (Valuations)
+    projectData.push(['CONTRACT VALUES']);
+    if (p.valuations.length > 0) {
+      projectData.push(['Name', 'Date', 'Grand Total', 'Fees', 'Omissions', 'Subtotal', 'VAT', 'Gross']);
+      p.valuations.forEach(v => {
+        const omissions = v.omissions || 0;
+        const subtotal = v.grandTotal - v.fees - omissions;
+        const vat = subtotal * v.vatRate;
+        const gross = v.grandTotal - omissions + vat;
+        projectData.push([
+          v.name,
+          new Date(v.date).toLocaleDateString('en-GB'),
+          `£${v.grandTotal.toLocaleString()}`,
+          `£${v.fees.toLocaleString()}`,
+          `£${omissions.toLocaleString()}`,
+          `£${subtotal.toLocaleString()}`,
+          `£${vat.toLocaleString()}`,
+          `£${gross.toLocaleString()}`,
+        ]);
+      });
+    } else {
+      projectData.push(['No contract values recorded']);
+    }
+    projectData.push(['']);
+    
+    // Payments Received
+    projectData.push(['PAYMENTS RECEIVED']);
+    if (p.payments.length > 0) {
+      projectData.push(['Date', 'Valuation', 'Type', 'Amount', 'VAT Rate', 'Total', 'Description']);
+      p.payments.forEach(pay => {
+        const vatRate = pay.type === 'cash' ? 0 : ((pay as { vatRate?: number }).vatRate || 0);
+        const vatAmount = pay.amount * vatRate;
+        const total = pay.amount + vatAmount;
+        projectData.push([
+          new Date(pay.date).toLocaleDateString('en-GB'),
+          pay.valuationName || '-',
+          pay.type === 'account' ? 'Account' : 'Fee',
+          `£${pay.amount.toLocaleString()}`,
+          `${(vatRate * 100).toFixed(0)}%`,
+          `£${total.toLocaleString()}`,
+          pay.description || '-',
+        ]);
+      });
+      // Total
+      const totalPayments = fin.totalInflows;
+      projectData.push(['', '', '', '', 'TOTAL:', `£${totalPayments.toLocaleString()}`, '']);
+    } else {
+      projectData.push(['No payments recorded']);
+    }
+    projectData.push(['']);
+    
+    // Supplier Costs
+    projectData.push(['SUPPLIER COSTS']);
+    if (p.supplierCosts.length > 0) {
+      projectData.push(['Date', 'Supplier', 'Amount', 'Description']);
+      p.supplierCosts.forEach(c => {
+        projectData.push([
+          new Date(c.date).toLocaleDateString('en-GB'),
+          c.supplier,
+          `£${c.amount.toLocaleString()}`,
+          c.description || '-',
+        ]);
+      });
+      // Total
+      projectData.push(['', 'TOTAL:', `£${fin.totalSupplierCosts.toLocaleString()}`, '']);
+    } else {
+      projectData.push(['No supplier costs recorded']);
+    }
+    
+    const projectSheet = XLSX.utils.aoa_to_sheet(projectData);
+    projectSheet['!cols'] = [
+      colWidth(18), colWidth(14), colWidth(14), colWidth(14),
+      colWidth(12), colWidth(14), colWidth(14), colWidth(30)
+    ];
+    XLSX.utils.book_append_sheet(wb, projectSheet, sheetName);
+  });
+  
   // Generate and download
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -421,4 +526,266 @@ export const exportDataToExcel = (state: {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+};
+
+// Generate Excel as Blob (for SharePoint upload)
+export const generateExcelBlob = (state: {
+  projects: Array<{
+    id: string;
+    code: string;
+    clientName: string;
+    address?: string;
+    status: 'active' | 'completed' | 'on_hold';
+    hasCashPayment: boolean;
+    valuations: Array<{
+      id: string;
+      name: string;
+      date: string;
+      grandTotal: number;
+      fees: number;
+      omissions: number;
+      vatRate: number;
+      notes?: string;
+    }>;
+    payments: Array<{
+      id: string;
+      date: string;
+      amount: number;
+      type: 'account' | 'cash';
+      vatRate?: number;
+      valuationName?: string;
+      description?: string;
+    }>;
+    supplierCosts: Array<{
+      id: string;
+      date: string;
+      amount: number;
+      supplier: string;
+      description?: string;
+    }>;
+    createdAt: string;
+    notes?: string;
+  }>;
+  operationalCosts: Array<{
+    id: string;
+    date: string;
+    amount: number;
+    category: string;
+    costType: string;
+    description?: string;
+    isRecurring?: boolean;
+  }>;
+}): Blob => {
+  const wb = XLSX.utils.book_new();
+  const today = new Date().toLocaleDateString('en-GB');
+  
+  // Calculate totals for summary
+  let totalGross = 0;
+  let totalInflows = 0;
+  let totalSupplierCosts = 0;
+  let totalProjectProfit = 0;
+  
+  state.projects.forEach(p => {
+    const financials = calculateProjectFinancials(p);
+    totalGross += financials.totalGross;
+    totalInflows += financials.totalInflows;
+    totalSupplierCosts += financials.totalSupplierCosts;
+    totalProjectProfit += financials.grossProfit;
+  });
+  
+  const totalFixedCosts = state.operationalCosts
+    .filter(c => c.costType === 'fixed')
+    .reduce((sum, c) => sum + c.amount, 0);
+  const totalVariableCosts = state.operationalCosts
+    .filter(c => c.costType === 'variable')
+    .reduce((sum, c) => sum + c.amount, 0);
+  const totalOpCosts = totalFixedCosts + totalVariableCosts;
+  const netProfit = totalProjectProfit - totalOpCosts;
+  
+  // SHEET 1: Overview/Summary
+  const summaryData = [
+    ['HOUSE OF CLARENCE - DASHBOARD SYNC'],
+    [''],
+    ['Last Updated:', today + ' ' + new Date().toLocaleTimeString('en-GB')],
+    [''],
+    [''],
+    ['OVERVIEW'],
+    ['Metric', 'Value'],
+    ['Total Projects', state.projects.length],
+    ['Active Projects', state.projects.filter(p => p.status === 'active').length],
+    ['Completed Projects', state.projects.filter(p => p.status === 'completed').length],
+    ['On Hold', state.projects.filter(p => p.status === 'on_hold').length],
+    [''],
+    ['FINANCIALS'],
+    ['Total Gross (Contract Values)', `£${totalGross.toLocaleString()}`],
+    ['Total Client Payments', `£${totalInflows.toLocaleString()}`],
+    ['Total Outstanding', `£${(totalGross - totalInflows).toLocaleString()}`],
+    ['Total Supplier Costs', `£${totalSupplierCosts.toLocaleString()}`],
+    ['Project Profit', `£${totalProjectProfit.toLocaleString()}`],
+    [''],
+    ['OPERATIONAL COSTS'],
+    ['Fixed Costs', `£${totalFixedCosts.toLocaleString()}`],
+    ['Variable Costs', `£${totalVariableCosts.toLocaleString()}`],
+    ['Total Operational', `£${totalOpCosts.toLocaleString()}`],
+    [''],
+    ['NET PROFIT', `£${netProfit.toLocaleString()}`],
+  ];
+  
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+  summarySheet['!cols'] = [colWidth(30), colWidth(25)];
+  XLSX.utils.book_append_sheet(wb, summarySheet, 'Overview');
+  
+  // SHEET 2: All Projects
+  const projectsHeader = [
+    ['ALL PROJECTS'],
+    [''],
+    ['Code', 'Client', 'Address', 'Status', 'Fees Enabled', 'Gross', 'Inflows', 'Outstanding', 'Costs', 'Profit'],
+  ];
+  
+  const projectRows = state.projects.map(p => {
+    const fin = calculateProjectFinancials(p);
+    return [
+      p.code,
+      p.clientName,
+      p.address || '',
+      p.status.charAt(0).toUpperCase() + p.status.slice(1),
+      p.hasCashPayment ? 'Yes' : 'No',
+      `£${fin.totalGross.toLocaleString()}`,
+      `£${fin.totalInflows.toLocaleString()}`,
+      `£${(fin.totalGross - fin.totalInflows).toLocaleString()}`,
+      `£${fin.totalSupplierCosts.toLocaleString()}`,
+      `£${fin.grossProfit.toLocaleString()}`,
+    ];
+  });
+  
+  const projectsData = [...projectsHeader, ...projectRows];
+  const projectsSheet = XLSX.utils.aoa_to_sheet(projectsData);
+  projectsSheet['!cols'] = [
+    colWidth(14), colWidth(20), colWidth(30), colWidth(12), colWidth(12),
+    colWidth(14), colWidth(14), colWidth(14), colWidth(14), colWidth(14)
+  ];
+  XLSX.utils.book_append_sheet(wb, projectsSheet, 'Projects');
+  
+  // SHEET 3: All Costs (Fixed + Variable)
+  const costsHeader = [
+    ['OPERATIONAL COSTS'],
+    [''],
+    ['Date', 'Type', 'Category', 'Amount', 'Description', 'Recurring'],
+  ];
+  
+  const costsRows = state.operationalCosts
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .map(c => [
+      new Date(c.date).toLocaleDateString('en-GB'),
+      c.costType === 'fixed' ? 'Fixed' : 'Variable',
+      c.category,
+      `£${c.amount.toLocaleString()}`,
+      c.description || '',
+      c.isRecurring ? 'Yes' : 'No',
+    ]);
+  
+  const costsData = [...costsHeader, ...costsRows];
+  const costsSheet = XLSX.utils.aoa_to_sheet(costsData);
+  costsSheet['!cols'] = [
+    colWidth(14), colWidth(12), colWidth(20), colWidth(14), colWidth(35), colWidth(10)
+  ];
+  XLSX.utils.book_append_sheet(wb, costsSheet, 'Costs');
+  
+  // Individual project sheets
+  state.projects.forEach(p => {
+    const fin = calculateProjectFinancials(p);
+    const sheetName = `P-${p.code}`.slice(0, 31).replace(/[\\/*?[\]]/g, '');
+    
+    const projectData: (string | number)[][] = [
+      [`PROJECT: ${p.code}`],
+      [''],
+      ['CLIENT DETAILS'],
+      ['Client Name', p.clientName],
+      ['Address', p.address || 'N/A'],
+      ['Status', p.status.charAt(0).toUpperCase() + p.status.slice(1)],
+      ['Fees Enabled', p.hasCashPayment ? 'Yes' : 'No'],
+      [''],
+      ['FINANCIAL SUMMARY'],
+      ['Gross Value', `£${fin.totalGross.toLocaleString()}`],
+      ['Total Received', `£${fin.totalInflows.toLocaleString()}`],
+      ['Outstanding', `£${(fin.totalGross - fin.totalInflows).toLocaleString()}`],
+      ['Supplier Costs', `£${fin.totalSupplierCosts.toLocaleString()}`],
+      ['Project Profit', `£${fin.grossProfit.toLocaleString()}`],
+      [''],
+    ];
+    
+    // Contract Values
+    projectData.push(['CONTRACT VALUES']);
+    if (p.valuations.length > 0) {
+      projectData.push(['Name', 'Date', 'Grand Total', 'Fees', 'Omissions', 'Subtotal', 'VAT', 'Gross']);
+      p.valuations.forEach(v => {
+        const omissions = v.omissions || 0;
+        const subtotal = v.grandTotal - v.fees - omissions;
+        const vat = subtotal * v.vatRate;
+        const gross = v.grandTotal - omissions + vat;
+        projectData.push([
+          v.name,
+          new Date(v.date).toLocaleDateString('en-GB'),
+          `£${v.grandTotal.toLocaleString()}`,
+          `£${v.fees.toLocaleString()}`,
+          `£${omissions.toLocaleString()}`,
+          `£${subtotal.toLocaleString()}`,
+          `£${vat.toLocaleString()}`,
+          `£${gross.toLocaleString()}`,
+        ]);
+      });
+    } else {
+      projectData.push(['No contract values recorded']);
+    }
+    projectData.push(['']);
+    
+    // Payments
+    projectData.push(['PAYMENTS RECEIVED']);
+    if (p.payments.length > 0) {
+      projectData.push(['Date', 'Valuation', 'Type', 'Amount', 'VAT', 'Total', 'Description']);
+      p.payments.forEach(pay => {
+        const vatRate = pay.type === 'cash' ? 0 : (pay.vatRate || 0);
+        const vatAmount = pay.amount * vatRate;
+        const total = pay.amount + vatAmount;
+        projectData.push([
+          new Date(pay.date).toLocaleDateString('en-GB'),
+          pay.valuationName || '-',
+          pay.type === 'account' ? 'Account' : 'Fee',
+          `£${pay.amount.toLocaleString()}`,
+          `£${vatAmount.toLocaleString()} (${(vatRate * 100).toFixed(0)}%)`,
+          `£${total.toLocaleString()}`,
+          pay.description || '-',
+        ]);
+      });
+    } else {
+      projectData.push(['No payments recorded']);
+    }
+    projectData.push(['']);
+    
+    // Supplier Costs
+    projectData.push(['SUPPLIER COSTS']);
+    if (p.supplierCosts.length > 0) {
+      projectData.push(['Date', 'Supplier', 'Amount', 'Description']);
+      p.supplierCosts.forEach(c => {
+        projectData.push([
+          new Date(c.date).toLocaleDateString('en-GB'),
+          c.supplier,
+          `£${c.amount.toLocaleString()}`,
+          c.description || '-',
+        ]);
+      });
+    } else {
+      projectData.push(['No supplier costs recorded']);
+    }
+    
+    const projectSheet = XLSX.utils.aoa_to_sheet(projectData);
+    projectSheet['!cols'] = [
+      colWidth(18), colWidth(14), colWidth(14), colWidth(14),
+      colWidth(16), colWidth(14), colWidth(14), colWidth(30)
+    ];
+    XLSX.utils.book_append_sheet(wb, projectSheet, sheetName);
+  });
+  
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 };

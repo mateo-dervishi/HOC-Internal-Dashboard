@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { LayoutDashboard, FolderKanban, PoundSterling, Receipt, Settings } from 'lucide-react';
+import { SyncButton } from './SyncButton';
 
 const Layout = () => {
   return (
@@ -36,6 +37,15 @@ const Layout = () => {
             <span>Settings</span>
           </NavLink>
         </nav>
+        
+        {/* Sync Button at bottom of sidebar */}
+        <div style={{ 
+          marginTop: 'auto', 
+          padding: '1rem',
+          borderTop: '1px solid var(--color-border)',
+        }}>
+          <SyncButton />
+        </div>
       </aside>
       
       <main className="main-content">
