@@ -1,60 +1,91 @@
-import { useState } from 'react';
-import { RefreshCw, Check, Download } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { RefreshCw, Check, Cloud, Download, AlertCircle } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { generateExcelBlob } from '../services/excelTemplate';
+import { syncToPowerAutomate } from '../services/powerAutomateSync';
+
+const WEBHOOK_URL_KEY = 'hoc_power_automate_webhook';
 
 export const SyncButton = () => {
   const { state } = useDashboard();
   const [syncing, setSyncing] = useState(false);
-  const [synced, setSynced] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [webhookUrl, setWebhookUrl] = useState<string>('');
+  const [statusMessage, setStatusMessage] = useState<string>('');
+
+  // Load webhook URL from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(WEBHOOK_URL_KEY);
+    if (saved) setWebhookUrl(saved);
+  }, []);
 
   const handleSync = async () => {
     setSyncing(true);
-    setSynced(false);
+    setSyncStatus('idle');
+    setStatusMessage('');
     
     try {
-      // Generate the Excel blob
-      const blob = generateExcelBlob({
-        projects: state.projects,
-        operationalCosts: state.operationalCosts,
-      });
+      if (webhookUrl) {
+        // Sync to Power Automate (SharePoint)
+        const result = await syncToPowerAutomate(webhookUrl, {
+          projects: state.projects,
+          operationalCosts: state.operationalCosts,
+        });
+        
+        if (result.success) {
+          setSyncStatus('success');
+          setStatusMessage('Synced to SharePoint!');
+        } else {
+          setSyncStatus('error');
+          setStatusMessage(result.message);
+        }
+      } else {
+        // Download Excel locally
+        const blob = generateExcelBlob({
+          projects: state.projects,
+          operationalCosts: state.operationalCosts,
+        });
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `HOC_Dashboard_Sync_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        setSyncStatus('success');
+        setStatusMessage('Downloaded!');
+      }
       
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `HOC_Dashboard_Sync_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      // Update sync status
+      // Update sync time
       const now = new Date();
       setLastSyncTime(now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
-      setSynced(true);
       
-      // Reset synced state after 3 seconds
-      setTimeout(() => setSynced(false), 3000);
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        setSyncStatus('idle');
+        setStatusMessage('');
+      }, 3000);
       
     } catch (error) {
       console.error('Sync failed:', error);
-      alert('Failed to generate Excel file. Please try again.');
+      setSyncStatus('error');
+      setStatusMessage('Sync failed');
     } finally {
       setSyncing(false);
     }
   };
 
+  const isSharePointMode = !!webhookUrl;
+
   return (
     <div style={{ 
       display: 'flex', 
-      alignItems: 'center', 
-      gap: '0.75rem',
-      padding: '0.5rem 1rem',
-      background: 'var(--color-bg-card)',
-      borderRadius: 'var(--radius-md)',
-      border: '1px solid var(--color-border)',
+      flexDirection: 'column',
+      gap: '0.5rem',
     }}>
       <button
         onClick={handleSync}
@@ -63,38 +94,87 @@ export const SyncButton = () => {
         style={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: '0.5rem',
-          padding: '0.5rem 1rem',
+          padding: '0.75rem 1rem',
           fontSize: '0.875rem',
+          width: '100%',
         }}
       >
         {syncing ? (
           <>
             <RefreshCw size={16} className="spinning" />
-            Generating...
+            Syncing...
           </>
-        ) : synced ? (
+        ) : syncStatus === 'success' ? (
           <>
             <Check size={16} />
-            Downloaded!
+            {statusMessage}
+          </>
+        ) : syncStatus === 'error' ? (
+          <>
+            <AlertCircle size={16} />
+            Error
+          </>
+        ) : isSharePointMode ? (
+          <>
+            <Cloud size={16} />
+            Sync to SharePoint
           </>
         ) : (
           <>
             <Download size={16} />
-            Sync to Excel
+            Download Excel
           </>
         )}
       </button>
       
-      {lastSyncTime && (
-        <span style={{ 
-          fontSize: '0.75rem', 
-          color: 'var(--color-text-muted)',
-        }}>
-          Last sync: {lastSyncTime}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontSize: '0.7rem', 
+        color: 'var(--color-text-muted)',
+      }}>
+        <span>
+          {isSharePointMode ? '☁️ SharePoint' : '💾 Local'}
         </span>
+        {lastSyncTime && (
+          <span>Last: {lastSyncTime}</span>
+        )}
+      </div>
+      
+      {syncStatus === 'error' && statusMessage && (
+        <div style={{
+          fontSize: '0.7rem',
+          color: 'var(--color-error)',
+          padding: '0.25rem',
+        }}>
+          {statusMessage}
+        </div>
       )}
     </div>
   );
+};
+
+// Export for use in Settings page
+export const useWebhookUrl = () => {
+  const [webhookUrl, setWebhookUrlState] = useState<string>('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem(WEBHOOK_URL_KEY);
+    if (saved) setWebhookUrlState(saved);
+  }, []);
+
+  const setWebhookUrl = (url: string) => {
+    setWebhookUrlState(url);
+    if (url) {
+      localStorage.setItem(WEBHOOK_URL_KEY, url);
+    } else {
+      localStorage.removeItem(WEBHOOK_URL_KEY);
+    }
+  };
+
+  return { webhookUrl, setWebhookUrl };
 };
 

@@ -1,60 +1,71 @@
 import { useState, useEffect } from 'react';
-import { Download, Upload, Trash2, AlertTriangle, RotateCcw, Link, CheckCircle, XCircle, RefreshCw, FileSpreadsheet, Table } from 'lucide-react';
+import { Download, Upload, Trash2, AlertTriangle, RotateCcw, Link, CheckCircle, XCircle, RefreshCw, FileSpreadsheet, Table, Cloud } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { generateHOCOperationalCosts } from '../data/seedOperationalCosts';
-import { 
-  getWebhookUrl, 
-  setWebhookUrl, 
-  isSyncEnabled, 
-  setSyncEnabled, 
-  testWebhookConnection,
-  syncToExcel 
-} from '../services/excelSync';
 import { generateExcelTemplate, exportDataToExcel } from '../services/excelTemplate';
+import { syncToPowerAutomate } from '../services/powerAutomateSync';
+
+const WEBHOOK_URL_KEY = 'hoc_power_automate_webhook';
 
 const Settings = () => {
-  const { state, dispatch, lastSyncStatus } = useDashboard();
+  const { state, dispatch } = useDashboard();
   
-  // Excel Sync State
+  // Power Automate Sync State
   const [webhookUrl, setWebhookUrlState] = useState('');
-  const [syncEnabled, setSyncEnabledState] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message?: string } | null>(null);
   const [manualSyncing, setManualSyncing] = useState(false);
   
-  // Load sync settings on mount
+  // Load webhook URL on mount
   useEffect(() => {
-    setWebhookUrlState(getWebhookUrl() || '');
-    setSyncEnabledState(isSyncEnabled());
+    const saved = localStorage.getItem(WEBHOOK_URL_KEY);
+    if (saved) setWebhookUrlState(saved);
   }, []);
   
   const handleSaveWebhookUrl = () => {
-    setWebhookUrl(webhookUrl);
+    if (webhookUrl) {
+      localStorage.setItem(WEBHOOK_URL_KEY, webhookUrl);
+    } else {
+      localStorage.removeItem(WEBHOOK_URL_KEY);
+    }
     setTestResult(null);
     alert('Webhook URL saved!');
   };
   
-  const handleToggleSync = () => {
-    const newValue = !syncEnabled;
-    setSyncEnabledState(newValue);
-    setSyncEnabled(newValue);
-  };
-  
   const handleTestConnection = async () => {
+    if (!webhookUrl) {
+      setTestResult({ success: false, message: 'Please enter a webhook URL first' });
+      return;
+    }
+    
     setTestingConnection(true);
     setTestResult(null);
-    const result = await testWebhookConnection();
-    setTestResult(result);
+    
+    const result = await syncToPowerAutomate(webhookUrl, {
+      projects: state.projects,
+      operationalCosts: state.operationalCosts,
+    });
+    
+    setTestResult({ success: result.success, message: result.message });
     setTestingConnection(false);
   };
   
   const handleManualSync = async () => {
+    if (!webhookUrl) {
+      alert('Please configure a webhook URL first');
+      return;
+    }
+    
     setManualSyncing(true);
-    const result = await syncToExcel(state);
+    const result = await syncToPowerAutomate(webhookUrl, {
+      projects: state.projects,
+      operationalCosts: state.operationalCosts,
+    });
+    
     if (result.success) {
-      alert('Data synced to Excel successfully!');
+      alert('Data synced to SharePoint successfully!');
     } else {
-      alert(`Sync failed: ${result.error}`);
+      alert(`Sync failed: ${result.message}`);
     }
     setManualSyncing(false);
   };
@@ -125,64 +136,34 @@ const Settings = () => {
         <p className="page-subtitle">Manage your dashboard data and preferences</p>
       </header>
       
-      {/* Excel Sync */}
+      {/* SharePoint Sync via Power Automate */}
       <div className="card mb-4">
         <div className="card-header">
-          <h3 className="card-title">Excel Live Sync</h3>
-          {syncEnabled && lastSyncStatus && (
-            <span style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.375rem',
-              fontSize: '0.75rem',
-              color: lastSyncStatus.success ? 'var(--color-success)' : 'var(--color-error)'
-            }}>
-              {lastSyncStatus.success ? <CheckCircle size={14} /> : <XCircle size={14} />}
-              {lastSyncStatus.success ? 'Synced' : 'Sync failed'}
-              {lastSyncStatus.time && (
-                <span style={{ color: 'var(--color-text-muted)' }}>
-                  {lastSyncStatus.time.toLocaleTimeString()}
-                </span>
-              )}
-            </span>
-          )}
+          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Cloud size={18} />
+            SharePoint Sync
+          </h3>
         </div>
         <div className="card-body">
           <div style={{ display: 'grid', gap: '1.25rem' }}>
-            {/* Toggle */}
+            {/* Info Box */}
             <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: '1rem 1.25rem',
-              background: 'var(--color-bg-elevated)',
+              padding: '1rem',
+              background: 'var(--color-bg-hover)',
               borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--color-border)'
+              fontSize: '0.8rem',
+              color: 'var(--color-text-muted)',
+              lineHeight: 1.6
             }}>
-              <div>
-                <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-                  Auto-Sync to Excel
-                </h4>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
-                  Automatically sync changes to your Excel file via Power Automate
-                </p>
-              </div>
-              <button 
-                onClick={handleToggleSync}
-                style={{ 
-                  padding: '0.5rem 1rem',
-                  background: syncEnabled ? 'var(--color-success)' : 'var(--color-bg-hover)',
-                  color: syncEnabled ? 'var(--color-bg)' : 'var(--color-text-muted)',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 500,
-                  fontSize: '0.8rem',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                {syncEnabled ? 'Enabled' : 'Disabled'}
-              </button>
+              <strong style={{ color: 'var(--color-text-secondary)' }}>How it works:</strong>
+              <br />
+              1. Create a Power Automate flow with an HTTP trigger
+              <br />
+              2. Add actions to create/update Excel in SharePoint
+              <br />
+              3. Paste the webhook URL below
+              <br />
+              4. Use the "Sync to SharePoint" button in the sidebar
             </div>
             
             {/* Webhook URL */}
@@ -209,7 +190,7 @@ const Settings = () => {
                 </button>
               </div>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: '0.5rem', marginBottom: 0 }}>
-                Get this URL from your Power Automate flow's HTTP trigger
+                {webhookUrl ? '✓ Webhook configured - use sidebar button to sync' : 'No webhook URL - downloads Excel locally'}
               </p>
             </div>
             
@@ -221,17 +202,23 @@ const Settings = () => {
                 disabled={testingConnection || !webhookUrl}
                 style={{ flex: 1 }}
               >
-                <Link size={16} />
-                {testingConnection ? 'Testing...' : 'Test Connection'}
+                {testingConnection ? (
+                  <><RefreshCw size={16} className="spinning" /> Testing...</>
+                ) : (
+                  <><Link size={16} /> Test Connection</>
+                )}
               </button>
               <button 
-                className="btn btn-secondary" 
+                className="btn btn-primary" 
                 onClick={handleManualSync}
                 disabled={manualSyncing || !webhookUrl}
                 style={{ flex: 1 }}
               >
-                <RefreshCw size={16} className={manualSyncing ? 'spin' : ''} />
-                {manualSyncing ? 'Syncing...' : 'Sync Now'}
+                {manualSyncing ? (
+                  <><RefreshCw size={16} className="spinning" /> Syncing...</>
+                ) : (
+                  <><Cloud size={16} /> Sync Now</>
+                )}
               </button>
             </div>
             
@@ -248,7 +235,7 @@ const Settings = () => {
                 color: testResult.success ? 'var(--color-success)' : 'var(--color-error)'
               }}>
                 {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                {testResult.success ? 'Connection successful!' : `Connection failed: ${testResult.error}`}
+                {testResult.message}
               </div>
             )}
           </div>
