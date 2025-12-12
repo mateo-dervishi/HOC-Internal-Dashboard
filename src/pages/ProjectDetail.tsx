@@ -46,6 +46,7 @@ const ProjectDetail = () => {
     date: new Date().toISOString().split('T')[0],
     grandTotal: '',
     fees: '',
+    omissions: '',
     vatRate: '20',
     notes: '',
   });
@@ -112,6 +113,7 @@ const ProjectDetail = () => {
       date: newValuation.date,
       grandTotal: parseFloat(newValuation.grandTotal) || 0,
       fees: parseFloat(newValuation.fees) || 0,
+      omissions: parseFloat(newValuation.omissions) || 0,
       vatRate: (parseFloat(newValuation.vatRate) || 20) / 100,
       notes: newValuation.notes,
     };
@@ -139,6 +141,7 @@ const ProjectDetail = () => {
       date: new Date().toISOString().split('T')[0],
       grandTotal: '',
       fees: '',
+      omissions: '',
       vatRate: '20',
       notes: '',
     });
@@ -150,6 +153,7 @@ const ProjectDetail = () => {
       date: valuation.date,
       grandTotal: valuation.grandTotal.toString(),
       fees: valuation.fees.toString(),
+      omissions: valuation.omissions?.toString() || '',
       vatRate: ((valuation.vatRate ?? VAT_RATE) * 100).toString(),
       notes: valuation.notes || '',
     });
@@ -464,6 +468,7 @@ const ProjectDetail = () => {
                 date: new Date().toISOString().split('T')[0],
                 grandTotal: '',
                 fees: '',
+                omissions: '',
                 vatRate: '20',
                 notes: '',
               });
@@ -482,6 +487,7 @@ const ProjectDetail = () => {
                   <th>Date</th>
                   <th>Grand Total</th>
                   <th>Fees</th>
+                  <th>Omissions</th>
                   <th>Subtotal</th>
                   <th>VAT</th>
                   <th>Gross Value</th>
@@ -499,6 +505,9 @@ const ProjectDetail = () => {
                         <td>{formatDate(valuation.date)}</td>
                         <td>{formatCurrency(calc.grandTotal)}</td>
                         <td>{calc.fees > 0 ? formatCurrency(calc.fees) : '-'}</td>
+                        <td style={{ color: calc.omissions > 0 ? 'var(--color-error)' : 'inherit' }}>
+                          {calc.omissions > 0 ? `-${formatCurrency(calc.omissions)}` : '-'}
+                        </td>
                         <td>{formatCurrency(calc.subtotal)}</td>
                         <td>
                           <span title={`VAT Rate: ${(calc.vatRate * 100).toFixed(0)}%`}>
@@ -618,7 +627,12 @@ const ProjectDetail = () => {
                           {formatCurrency(payment.amount)}
                         </td>
                         <td style={{ color: 'var(--color-text-muted)' }}>
-                          {payment.vatRate ? `${formatCurrency(vatAmount)} (${(payment.vatRate * 100).toFixed(0)}%)` : '-'}
+                          {payment.type === 'cash' 
+                            ? `${formatCurrency(0)} (0%)` 
+                            : payment.vatRate 
+                              ? `${formatCurrency(vatAmount)} (${(payment.vatRate * 100).toFixed(0)}%)`
+                              : '-'
+                          }
                         </td>
                         <td style={{ fontWeight: 500, color: 'var(--color-success)' }}>
                           +{formatCurrency(totalWithVat)}
@@ -803,6 +817,22 @@ const ProjectDetail = () => {
                 </div>
                 
                 <div className="form-group">
+                  <label className="form-label">Omissions (£)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="0.00"
+                    value={newValuation.omissions}
+                    onChange={(e) => setNewValuation({ ...newValuation, omissions: e.target.value })}
+                    min="0"
+                    step="0.01"
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                    Cancelled items - deducted from VATable portion
+                  </small>
+                </div>
+                
+                <div className="form-group">
                   <label className="form-label">VAT Rate (%)</label>
                   <input
                     type="number"
@@ -831,16 +861,20 @@ const ProjectDetail = () => {
                     {(() => {
                       const grandTotal = parseFloat(newValuation.grandTotal) || 0;
                       const fees = parseFloat(newValuation.fees) || 0;
+                      const omissions = parseFloat(newValuation.omissions) || 0;
                       const vatRate = (parseFloat(newValuation.vatRate) || 20) / 100;
-                      const subtotal = grandTotal - fees;
+                      const subtotal = grandTotal - fees - omissions;
                       const vat = subtotal * vatRate;
-                      const gross = grandTotal + vat;
+                      const gross = grandTotal - omissions + vat;
                       
                       return (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontSize: '0.9rem' }}>
                           <div>Grand Total:</div><div style={{ textAlign: 'right' }}>{formatCurrency(grandTotal)}</div>
                           {fees > 0 && (
                             <><div>Fees:</div><div style={{ textAlign: 'right' }}>{formatCurrency(fees)}</div></>
+                          )}
+                          {omissions > 0 && (
+                            <><div>Omissions:</div><div style={{ textAlign: 'right', color: 'var(--color-error)' }}>-{formatCurrency(omissions)}</div></>
                           )}
                           <div>Subtotal:</div><div style={{ textAlign: 'right' }}>{formatCurrency(subtotal)}</div>
                           <div>VAT ({(vatRate * 100).toFixed(0)}%):</div><div style={{ textAlign: 'right' }}>{formatCurrency(vat)}</div>
@@ -901,7 +935,15 @@ const ProjectDetail = () => {
                     <select
                       className="form-select"
                       value={newPayment.type}
-                      onChange={(e) => setNewPayment({ ...newPayment, type: e.target.value as Payment['type'] })}
+                      onChange={(e) => {
+                        const newType = e.target.value as Payment['type'];
+                        // Auto-set VAT to 0 for Fee payments
+                        setNewPayment({ 
+                          ...newPayment, 
+                          type: newType,
+                          vatRate: newType === 'cash' ? '0' : newPayment.vatRate || '20'
+                        });
+                      }}
                     >
                       <option value="account">Account</option>
                       {project.hasCashPayment && (
@@ -924,19 +966,36 @@ const ProjectDetail = () => {
                       required
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">VAT Rate (%)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={newPayment.vatRate}
-                      onChange={(e) => setNewPayment({ ...newPayment, vatRate: e.target.value })}
-                      min="0"
-                      max="100"
-                      step="0.5"
-                      placeholder="20"
-                    />
-                  </div>
+                  {newPayment.type === 'account' && (
+                    <div className="form-group">
+                      <label className="form-label">VAT Rate (%)</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={newPayment.vatRate}
+                        onChange={(e) => setNewPayment({ ...newPayment, vatRate: e.target.value })}
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        placeholder="20"
+                      />
+                    </div>
+                  )}
+                  {newPayment.type === 'cash' && (
+                    <div className="form-group">
+                      <label className="form-label">VAT Rate (%)</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value="0"
+                        disabled
+                        style={{ opacity: 0.5 }}
+                      />
+                      <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                        Fee payments have no VAT
+                      </small>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="form-group">

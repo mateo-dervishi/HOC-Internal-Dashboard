@@ -124,6 +124,7 @@ export const exportDataToExcel = (state: {
       date: string;
       grandTotal: number;
       fees: number;
+      omissions: number;
       vatRate: number;
       notes?: string;
     }>;
@@ -257,15 +258,16 @@ export const exportDataToExcel = (state: {
   const valuationsHeader = [
     ['VALUATIONS DETAIL'],
     [''],
-    ['Project', 'Client', 'Valuation', 'Date', 'Grand Total', 'Fees', 'VAT Rate', 'Subtotal', 'VAT', 'Gross'],
+    ['Project', 'Client', 'Valuation', 'Date', 'Grand Total', 'Fees', 'Omissions', 'VAT Rate', 'Subtotal', 'VAT', 'Gross'],
   ];
   
   const valuationRows: (string | number)[][] = [];
   state.projects.forEach(p => {
     p.valuations.forEach(v => {
-      const subtotal = v.grandTotal - v.fees;
+      const omissions = v.omissions || 0;
+      const subtotal = v.grandTotal - v.fees - omissions;
       const vat = subtotal * v.vatRate;
-      const gross = v.grandTotal + vat;
+      const gross = v.grandTotal - omissions + vat;
       valuationRows.push([
         p.code,
         p.clientName,
@@ -273,6 +275,7 @@ export const exportDataToExcel = (state: {
         new Date(v.date).toLocaleDateString('en-GB'),
         `£${v.grandTotal.toLocaleString()}`,
         `£${v.fees.toLocaleString()}`,
+        `£${omissions.toLocaleString()}`,
         `${(v.vatRate * 100).toFixed(0)}%`,
         `£${subtotal.toLocaleString()}`,
         `£${vat.toLocaleString()}`,
@@ -285,7 +288,7 @@ export const exportDataToExcel = (state: {
   const valuationsSheet = XLSX.utils.aoa_to_sheet(valuationsData);
   valuationsSheet['!cols'] = [
     colWidth(14), colWidth(18), colWidth(18), colWidth(12), colWidth(14),
-    colWidth(12), colWidth(10), colWidth(14), colWidth(12), colWidth(14)
+    colWidth(12), colWidth(12), colWidth(10), colWidth(14), colWidth(12), colWidth(14)
   ];
   XLSX.utils.book_append_sheet(wb, valuationsSheet, 'Valuations');
   
