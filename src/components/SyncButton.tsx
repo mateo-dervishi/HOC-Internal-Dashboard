@@ -1,10 +1,25 @@
 import { useState } from 'react';
 import { RefreshCw, Check, Cloud, AlertCircle } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { syncToPowerAutomate } from '../services/powerAutomateSync';
+import { generateExcelBlob } from '../services/excelTemplate';
 
 // Power Automate webhook URL - syncs to SharePoint
 const WEBHOOK_URL = 'https://default19c5fbd0b8174474a78b2d48ff2c5e.c5.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8305f76f507445b4be118d0548f99db5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ct9MLR8rUytSwO11awmQXQT_PHqEfh06NoxEPmALV_0';
+
+// Convert blob to base64
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      // Remove the data URL prefix (e.g., "data:application/...;base64,")
+      const base64Data = base64.split(',')[1];
+      resolve(base64Data);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
 
 export const SyncButton = () => {
   const { state } = useDashboard();
@@ -19,18 +34,34 @@ export const SyncButton = () => {
     setStatusMessage('');
     
     try {
-      // Sync to Power Automate (SharePoint)
-      const result = await syncToPowerAutomate(WEBHOOK_URL, {
+      // Generate Excel file with all tabs
+      const excelBlob = generateExcelBlob({
         projects: state.projects,
         operationalCosts: state.operationalCosts,
       });
       
-      if (result.success) {
+      // Convert to base64 for sending via HTTP
+      const base64Excel = await blobToBase64(excelBlob);
+      
+      // Send to Power Automate
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName: `HOC_Dashboard_Sync.xlsx`,
+          fileContent: base64Excel,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      
+      if (response.ok) {
         setSyncStatus('success');
         setStatusMessage('Synced!');
       } else {
         setSyncStatus('error');
-        setStatusMessage(result.message);
+        setStatusMessage('Sync failed');
       }
       
       // Update sync time
