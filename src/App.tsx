@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MsalProvider, useIsAuthenticated, useMsal } from '@azure/msal-react';
-import { PublicClientApplication, EventType, EventMessage, AuthenticationResult } from '@azure/msal-browser';
+import { PublicClientApplication, EventType } from '@azure/msal-browser';
+import type { EventMessage, AuthenticationResult } from '@azure/msal-browser';
 import { DashboardProvider } from './context/DashboardContext';
 import Layout from './components/Layout';
 import Overview from './pages/Overview';

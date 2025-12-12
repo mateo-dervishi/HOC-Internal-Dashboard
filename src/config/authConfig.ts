@@ -1,4 +1,5 @@
-import { Configuration, LogLevel } from '@azure/msal-browser';
+import { LogLevel } from '@azure/msal-browser';
+import type { Configuration } from '@azure/msal-browser';
 
 // ============================================================
 // AZURE AD CONFIGURATION - HOC Internal Dashboard
