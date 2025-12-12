@@ -1,10 +1,18 @@
-import { Download, Upload, FileSpreadsheet, Table, LogOut } from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, Table, LogOut, User } from 'lucide-react';
+import { useMsal } from '@azure/msal-react';
 import { useDashboard } from '../context/DashboardContext';
 import { generateExcelTemplate, exportDataToExcel } from '../services/excelTemplate';
-import { logout } from '../components/Login';
 
 const Settings = () => {
   const { state, dispatch } = useDashboard();
+  const { instance, accounts } = useMsal();
+  const activeAccount = accounts[0];
+
+  const handleLogout = () => {
+    if (confirm('Are you sure you want to sign out?')) {
+      instance.logoutPopup();
+    }
+  };
   
   const handleExportData = () => {
     const dataStr = JSON.stringify(state, null, 2);
@@ -268,34 +276,67 @@ const Settings = () => {
           <h3 className="card-title">Account</h3>
         </div>
         <div className="card-body">
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            padding: '1rem 1.25rem',
-            background: 'var(--color-bg-elevated)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--color-border)'
-          }}>
-            <div>
-              <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {/* Logged in user */}
+            {activeAccount && (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                gap: '1rem',
+                padding: '1rem 1.25rem',
+                background: 'var(--color-bg-elevated)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'var(--color-bg-hover)',
+                  border: '1px solid var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <User size={20} style={{ color: 'var(--color-text-muted)' }} />
+                </div>
+                <div>
+                  <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                    {activeAccount.name || 'User'}
+                  </h4>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
+                    {activeAccount.username}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Sign out */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              padding: '1rem 1.25rem',
+              background: 'var(--color-bg-elevated)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border)'
+            }}>
+              <div>
+                <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                  Sign Out
+                </h4>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
+                  End your current session
+                </p>
+              </div>
+              <button 
+                className="btn btn-secondary" 
+                onClick={handleLogout}
+              >
+                <LogOut size={16} />
                 Sign Out
-              </h4>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
-                End your current session
-              </p>
+              </button>
             </div>
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => {
-                if (confirm('Are you sure you want to sign out?')) {
-                  logout();
-                }
-              }}
-            >
-              <LogOut size={16} />
-              Sign Out
-            </button>
           </div>
         </div>
       </div>

@@ -1,40 +1,43 @@
 import { useState } from 'react';
-import { Lock, Eye, EyeOff } from 'lucide-react';
+import { useMsal } from '@azure/msal-react';
+import { Lock, Mail, AlertCircle } from 'lucide-react';
+import { loginRequest, isAzureConfigured } from '../config/authConfig';
 
-// Simple password for dashboard access - change this!
-const ADMIN_PASSWORD = 'HOC2025!';
-
-interface LoginProps {
-  onLogin: () => void;
-}
-
-export const Login = ({ onLogin }: LoginProps) => {
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+export const Login = () => {
+  const { instance } = useMsal();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleMicrosoftLogin = async () => {
     setLoading(true);
     setError('');
-
-    setTimeout(() => {
-      if (password === ADMIN_PASSWORD) {
-        localStorage.setItem('hoc_authenticated', 'true');
-        localStorage.setItem('hoc_auth_time', Date.now().toString());
-        onLogin();
+    
+    try {
+      await instance.loginPopup(loginRequest);
+    } catch (err) {
+      console.error('Login error:', err);
+      if (err instanceof Error) {
+        if (err.message.includes('user_cancelled')) {
+          setError('Login cancelled');
+        } else if (err.message.includes('AADSTS')) {
+          setError('Authentication failed. Please try again.');
+        } else {
+          setError(err.message);
+        }
       } else {
-        setError('Incorrect password');
-        setPassword('');
+        setError('An error occurred during login');
       }
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
+
+  const azureConfigured = isAzureConfigured();
 
   return (
     <div className="login-container">
       <div className="login-card">
+        {/* Logo/Header */}
         <div className="login-header">
           <div className="login-icon">
             <Lock size={28} />
@@ -43,67 +46,89 @@ export const Login = ({ onLogin }: LoginProps) => {
           <p>Internal Dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <div className="password-input-wrapper">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="form-input"
-                autoFocus
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="password-toggle"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+        {!azureConfigured ? (
+          // Show setup instructions if Azure not configured
+          <div style={{
+            padding: '1.5rem',
+            background: 'var(--color-warning-dim)',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: '1.5rem',
+          }}>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+              <AlertCircle size={20} style={{ color: 'var(--color-warning)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ 
+                  color: 'var(--color-warning)', 
+                  fontWeight: 500, 
+                  marginBottom: '0.5rem',
+                  fontSize: '0.875rem' 
+                }}>
+                  Azure AD Not Configured
+                </p>
+                <p style={{ 
+                  color: 'var(--color-text-secondary)', 
+                  fontSize: '0.8rem',
+                  lineHeight: 1.5,
+                  margin: 0 
+                }}>
+                  Please update <code style={{ 
+                    background: 'var(--color-bg-elevated)', 
+                    padding: '0.125rem 0.375rem',
+                    borderRadius: '3px',
+                    fontSize: '0.75rem'
+                  }}>src/config/authConfig.ts</code> with your Azure AD Client ID and Tenant ID.
+                </p>
+              </div>
             </div>
           </div>
+        ) : (
+          // Microsoft Login Button
+          <>
+            {error && (
+              <div className="login-error">{error}</div>
+            )}
 
-          {error && <div className="login-error">{error}</div>}
+            <button
+              onClick={handleMicrosoftLogin}
+              disabled={loading}
+              className="btn btn-primary login-btn"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.75rem',
+              }}
+            >
+              {loading ? (
+                'Signing in...'
+              ) : (
+                <>
+                  <Mail size={20} />
+                  Sign in with Microsoft
+                </>
+              )}
+            </button>
 
-          <button
-            type="submit"
-            disabled={loading || !password}
-            className="btn btn-primary login-btn"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+            <p style={{
+              textAlign: 'center',
+              marginTop: '1.5rem',
+              color: 'var(--color-text-muted)',
+              fontSize: '0.8rem',
+              lineHeight: 1.5,
+            }}>
+              Use your company Microsoft account<br />
+              <span style={{ color: 'var(--color-text-dim)' }}>(@houseofclarence.com)</span>
+            </p>
+          </>
+        )}
 
+        {/* Footer */}
         <p className="login-footer">Authorized personnel only</p>
       </div>
     </div>
   );
 };
 
-export const isAuthenticated = (): boolean => {
-  const auth = localStorage.getItem('hoc_authenticated');
-  const authTime = localStorage.getItem('hoc_auth_time');
-  
-  if (!auth || !authTime) return false;
-  
-  const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000;
-  const elapsed = Date.now() - parseInt(authTime);
-  
-  if (elapsed > SESSION_DURATION) {
-    localStorage.removeItem('hoc_authenticated');
-    localStorage.removeItem('hoc_auth_time');
-    return false;
-  }
-  
-  return true;
-};
-
-export const logout = () => {
-  localStorage.removeItem('hoc_authenticated');
-  localStorage.removeItem('hoc_auth_time');
-  window.location.reload();
-};
-
+// Legacy exports for compatibility (no longer used with Azure AD)
+export const isAuthenticated = (): boolean => false;
+export const logout = () => {};
