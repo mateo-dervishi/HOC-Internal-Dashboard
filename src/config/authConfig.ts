@@ -1,67 +1,33 @@
-import { Configuration, LogLevel } from '@azure/msal-browser';
+import { createClient } from '@supabase/supabase-js';
 
 // ============================================================
-// AZURE AD CONFIGURATION
+// SUPABASE CONFIGURATION
 // ============================================================
-// You need to register an app in Azure Portal and fill in these values:
-// 1. Go to https://portal.azure.com
-// 2. Search "App registrations" → New registration
-// 3. Name: "HOC Internal Dashboard"
-// 4. Account type: "Accounts in this organizational directory only"
-// 5. Redirect URI: "Single-page application (SPA)" → your Vercel URL
-// 6. Copy the Client ID and Tenant ID below
+// Get these from your Supabase project settings:
+// 1. Go to https://supabase.com/dashboard
+// 2. Select your project
+// 3. Go to Settings → API
+// 4. Copy the URL and anon/public key
 // ============================================================
 
-// REPLACE THESE WITH YOUR VALUES FROM AZURE PORTAL
-export const AZURE_CLIENT_ID = 'YOUR_CLIENT_ID_HERE'; // Application (client) ID
-export const AZURE_TENANT_ID = 'YOUR_TENANT_ID_HERE'; // Directory (tenant) ID
+// REPLACE THESE WITH YOUR SUPABASE VALUES
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';           // e.g., https://xxxxx.supabase.co
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // The "anon" / "public" key
 
-// Your Vercel deployment URL (update this after deployment)
-export const REDIRECT_URI = typeof window !== 'undefined' 
-  ? window.location.origin 
-  : 'http://localhost:5173';
+// Allowed email domains (only these can sign up/login)
+export const ALLOWED_EMAIL_DOMAINS = ['houseofclarence.com'];
 
-// MSAL Configuration
-export const msalConfig: Configuration = {
-  auth: {
-    clientId: AZURE_CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${AZURE_TENANT_ID}`,
-    redirectUri: REDIRECT_URI,
-    postLogoutRedirectUri: REDIRECT_URI,
-    navigateToLoginRequestUrl: true,
-  },
-  cache: {
-    cacheLocation: 'localStorage',
-    storeAuthStateInCookie: false,
-  },
-  system: {
-    loggerOptions: {
-      loggerCallback: (level, message, containsPii) => {
-        if (containsPii) return;
-        switch (level) {
-          case LogLevel.Error:
-            console.error(message);
-            break;
-          case LogLevel.Warning:
-            console.warn(message);
-            break;
-          default:
-            break;
-        }
-      },
-      logLevel: LogLevel.Warning,
-    },
-  },
+// Create Supabase client
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Check if Supabase is configured
+export const isSupabaseConfigured = () => {
+  return SUPABASE_URL !== 'YOUR_SUPABASE_URL' && 
+         SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
 };
 
-// Scopes for login - basic user profile info
-export const loginRequest = {
-  scopes: ['User.Read'],
+// Validate email domain
+export const isAllowedEmail = (email: string): boolean => {
+  const domain = email.split('@')[1]?.toLowerCase();
+  return ALLOWED_EMAIL_DOMAINS.some(allowed => domain === allowed.toLowerCase());
 };
-
-// Check if Azure AD is configured
-export const isAzureConfigured = () => {
-  return AZURE_CLIENT_ID !== 'YOUR_CLIENT_ID_HERE' && 
-         AZURE_TENANT_ID !== 'YOUR_TENANT_ID_HERE';
-};
-
