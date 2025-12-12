@@ -46,7 +46,6 @@ const ProjectDetail = () => {
     date: new Date().toISOString().split('T')[0],
     grandTotal: '',
     fees: '',
-    omissions: '',
     vatRate: '20',
     notes: '',
   });
@@ -113,7 +112,6 @@ const ProjectDetail = () => {
       date: newValuation.date,
       grandTotal: parseFloat(newValuation.grandTotal) || 0,
       fees: parseFloat(newValuation.fees) || 0,
-      omissions: parseFloat(newValuation.omissions) || 0,
       vatRate: (parseFloat(newValuation.vatRate) || 20) / 100,
       notes: newValuation.notes,
     };
@@ -141,7 +139,6 @@ const ProjectDetail = () => {
       date: new Date().toISOString().split('T')[0],
       grandTotal: '',
       fees: '',
-      omissions: '',
       vatRate: '20',
       notes: '',
     });
@@ -153,7 +150,6 @@ const ProjectDetail = () => {
       date: valuation.date,
       grandTotal: valuation.grandTotal.toString(),
       fees: valuation.fees.toString(),
-      omissions: valuation.omissions.toString(),
       vatRate: ((valuation.vatRate ?? VAT_RATE) * 100).toString(),
       notes: valuation.notes || '',
     });
@@ -468,7 +464,6 @@ const ProjectDetail = () => {
                 date: new Date().toISOString().split('T')[0],
                 grandTotal: '',
                 fees: '',
-                omissions: '',
                 vatRate: '20',
                 notes: '',
               });
@@ -486,7 +481,7 @@ const ProjectDetail = () => {
                   <th>Name</th>
                   <th>Date</th>
                   <th>Grand Total</th>
-                  <th>Omissions</th>
+                  <th>Fees</th>
                   <th>Subtotal</th>
                   <th>VAT</th>
                   <th>Gross Value</th>
@@ -497,15 +492,13 @@ const ProjectDetail = () => {
                 {project.valuations
                   .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                   .map(valuation => {
-                    const calc = calculateValuationTotals(valuation, project.hasCashPayment);
+                    const calc = calculateValuationTotals(valuation);
                     return (
                       <tr key={valuation.id}>
                         <td style={{ fontWeight: 500 }}>{valuation.name}</td>
                         <td>{formatDate(valuation.date)}</td>
                         <td>{formatCurrency(calc.grandTotal)}</td>
-                        <td style={{ color: calc.omissions > 0 ? 'var(--color-error)' : 'inherit' }}>
-                          {calc.omissions > 0 ? `-${formatCurrency(calc.omissions)}` : '-'}
-                        </td>
+                        <td>{calc.fees > 0 ? formatCurrency(calc.fees) : '-'}</td>
                         <td>{formatCurrency(calc.subtotal)}</td>
                         <td>
                           <span title={`VAT Rate: ${(calc.vatRate * 100).toFixed(0)}%`}>
@@ -777,7 +770,7 @@ const ProjectDetail = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Grand Total (£) - Ex VAT</label>
+                  <label className="form-label">Grand Total (£)</label>
                   <input
                     type="number"
                     className="form-input"
@@ -789,23 +782,23 @@ const ProjectDetail = () => {
                     required
                   />
                   <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                    Total value of goods/services for this valuation
+                    Total contract value (Fees + Subtotal)
                   </small>
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Omissions (£)</label>
+                  <label className="form-label">Fees (£)</label>
                   <input
                     type="number"
                     className="form-input"
                     placeholder="0.00"
-                    value={newValuation.omissions}
-                    onChange={(e) => setNewValuation({ ...newValuation, omissions: e.target.value })}
+                    value={newValuation.fees}
+                    onChange={(e) => setNewValuation({ ...newValuation, fees: e.target.value })}
                     min="0"
                     step="0.01"
                   />
                   <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                    Cancelled items - enter as positive number
+                    Non-VATable fees portion (leave empty if none)
                   </small>
                 </div>
                 
@@ -837,17 +830,17 @@ const ProjectDetail = () => {
                     <div className="stat-label" style={{ marginBottom: '0.75rem' }}>Preview</div>
                     {(() => {
                       const grandTotal = parseFloat(newValuation.grandTotal) || 0;
-                      const omissions = parseFloat(newValuation.omissions) || 0;
+                      const fees = parseFloat(newValuation.fees) || 0;
                       const vatRate = (parseFloat(newValuation.vatRate) || 20) / 100;
-                      const subtotal = grandTotal - omissions;
+                      const subtotal = grandTotal - fees;
                       const vat = subtotal * vatRate;
-                      const gross = grandTotal + vat - omissions;
+                      const gross = grandTotal + vat;
                       
                       return (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', fontSize: '0.9rem' }}>
                           <div>Grand Total:</div><div style={{ textAlign: 'right' }}>{formatCurrency(grandTotal)}</div>
-                          {omissions > 0 && (
-                            <><div>Omissions:</div><div style={{ textAlign: 'right', color: 'var(--color-error)' }}>-{formatCurrency(omissions)}</div></>
+                          {fees > 0 && (
+                            <><div>Fees:</div><div style={{ textAlign: 'right' }}>{formatCurrency(fees)}</div></>
                           )}
                           <div>Subtotal:</div><div style={{ textAlign: 'right' }}>{formatCurrency(subtotal)}</div>
                           <div>VAT ({(vatRate * 100).toFixed(0)}%):</div><div style={{ textAlign: 'right' }}>{formatCurrency(vat)}</div>

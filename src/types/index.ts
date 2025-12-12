@@ -5,15 +5,14 @@ export interface Valuation {
   date: string;
   
   // Values for this valuation
-  grandTotal: number;        // Total goods value for this valuation (ex VAT)
-  fees: number;              // Fees portion (non-VAT) - only if fees enabled
-  omissions: number;         // Deductions (enter as positive, will be subtracted)
+  grandTotal: number;        // Total contract value (Fees + Subtotal)
+  fees: number;              // Fees portion (non-VAT)
   vatRate: number;           // VAT rate (e.g., 0.20 for 20%, can vary per project)
   
-  // Calculated
-  // subtotal = grandTotal - omissions (fees are separate, not deducted from subtotal)
+  // Calculated:
+  // subtotal = grandTotal - fees (VATable portion)
   // vat = subtotal * vatRate
-  // gross = grandTotal + vat
+  // gross = grandTotal + vat = fees + subtotal + vat
   
   notes?: string;
 }
@@ -77,21 +76,21 @@ export interface DashboardState {
 export const VAT_RATE = 0.20;
 
 // Helper to calculate valuation totals
-// New formula: Grand Total = Subtotal + Fees, Gross = Grand Total + VAT
-export const calculateValuationTotals = (valuation: Valuation, hasFees: boolean) => {
-  const fees = hasFees ? valuation.fees : 0;
-  // Subtotal is the VATable portion (grandTotal - fees - omissions)
-  const subtotal = valuation.grandTotal - fees - valuation.omissions;
+// Formula: Grand Total = Fees + Subtotal, Gross = Grand Total + VAT
+export const calculateValuationTotals = (valuation: Valuation) => {
+  const fees = valuation.fees || 0;
+  // Subtotal is the VATable portion (grandTotal - fees)
+  const subtotal = valuation.grandTotal - fees;
   // Use per-valuation VAT rate (default to 20% if not set)
   const vatRate = valuation.vatRate ?? VAT_RATE;
+  // VAT only applies to subtotal (not fees)
   const vat = subtotal * vatRate;
-  // Gross = Grand Total + VAT (the total client pays)
-  const gross = valuation.grandTotal + vat - valuation.omissions;
+  // Gross = Grand Total + VAT = Fees + Subtotal + VAT
+  const gross = valuation.grandTotal + vat;
   
   return {
     grandTotal: valuation.grandTotal,
     fees,
-    omissions: valuation.omissions,
     subtotal,
     vatRate,
     vat,
@@ -105,17 +104,15 @@ export const calculateProjectFinancials = (project: Project) => {
   // Sum all valuations
   let totalGrandTotal = 0;
   let totalFees = 0;
-  let totalOmissions = 0;
   let totalSubtotal = 0;
   let totalVat = 0;
   let totalIncVat = 0;
   let totalGross = 0;
   
   project.valuations.forEach(v => {
-    const calc = calculateValuationTotals(v, project.hasCashPayment);
+    const calc = calculateValuationTotals(v);
     totalGrandTotal += calc.grandTotal;
     totalFees += calc.fees;
-    totalOmissions += calc.omissions;
     totalSubtotal += calc.subtotal;
     totalVat += calc.vat;
     totalIncVat += calc.totalIncVat;
@@ -148,7 +145,6 @@ export const calculateProjectFinancials = (project: Project) => {
     // Valuation totals
     totalGrandTotal,
     totalFees,
-    totalOmissions,
     totalSubtotal,
     totalVat,
     totalIncVat,
