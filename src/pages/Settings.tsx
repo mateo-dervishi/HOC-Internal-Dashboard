@@ -1,6 +1,5 @@
-import { Download, Upload, Trash2, AlertTriangle, RotateCcw, FileSpreadsheet, Table } from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, Table } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { generateHOCOperationalCosts } from '../data/seedOperationalCosts';
 import { generateExcelTemplate, exportDataToExcel } from '../services/excelTemplate';
 
 const Settings = () => {
@@ -43,26 +42,6 @@ const Settings = () => {
     
     // Reset file input
     event.target.value = '';
-  };
-  
-  const handleClearAllData = () => {
-    if (confirm('Are you absolutely sure you want to delete ALL data? This action cannot be undone.')) {
-      if (confirm('Final confirmation: All projects, payments, and operational costs will be permanently deleted.')) {
-        dispatch({ type: 'LOAD_STATE', payload: { projects: [], operationalCosts: [] } });
-        alert('All data has been cleared.');
-      }
-    }
-  };
-  
-  const handleResetToDefaultData = () => {
-    if (confirm('This will reset operational costs to the default HOC data (warehouse, showroom, salaries, misc expenses). Your projects will be kept.\n\nContinue?')) {
-      const newCosts = generateHOCOperationalCosts();
-      dispatch({ type: 'LOAD_STATE', payload: { 
-        projects: state.projects, 
-        operationalCosts: newCosts 
-      }});
-      alert(`Operational costs reset to default (${newCosts.length} entries).`);
-    }
   };
 
   return (
@@ -206,54 +185,6 @@ const Settings = () => {
               </label>
             </div>
             
-            {/* Reset */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: '1rem 1.25rem',
-              background: 'var(--color-bg-elevated)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--color-border)'
-            }}>
-              <div>
-                <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-                  Reset Operational Costs
-                </h4>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
-                  Reset to default HOC data (keeps projects)
-                </p>
-              </div>
-              <button className="btn btn-secondary" onClick={handleResetToDefaultData}>
-                <RotateCcw size={16} />
-                Reset
-              </button>
-            </div>
-            
-            {/* Clear Data */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: '1rem 1.25rem',
-              background: 'var(--color-error-dim)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(248, 113, 113, 0.3)'
-            }}>
-              <div>
-                <h4 style={{ marginBottom: '0.25rem', fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-error)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <AlertTriangle size={14} />
-                  Clear All Data
-                </h4>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
-                  Permanently delete everything
-                </p>
-              </div>
-              <button className="btn btn-danger" onClick={handleClearAllData}>
-                <Trash2 size={16} />
-                Clear
-              </button>
-            </div>
           </div>
         </div>
       </div>
