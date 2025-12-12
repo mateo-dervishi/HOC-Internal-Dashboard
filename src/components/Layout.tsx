@@ -5,13 +5,13 @@ import { SyncButton } from './SyncButton';
 const Layout = () => {
   return (
     <div className="app-container">
-      <aside className="sidebar">
+      <aside className="sidebar" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
         <div className="sidebar-header">
           <div className="sidebar-logo">House of Clarence</div>
           <div className="sidebar-tagline">Internal Operations</div>
         </div>
         
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav" style={{ flex: 1 }}>
           <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} end>
             <LayoutDashboard />
             <span>Overview</span>
@@ -40,7 +40,6 @@ const Layout = () => {
         
         {/* Sync Button at bottom of sidebar */}
         <div style={{ 
-          marginTop: 'auto', 
           padding: '1rem',
           borderTop: '1px solid var(--color-border)',
         }}>
