@@ -35,6 +35,7 @@ export const fetchProjects = async (): Promise<Project[]> => {
         valuations,
         payments,
         supplierCosts,
+        createdAt: p.created_at,
       };
     })
   );
@@ -42,7 +43,7 @@ export const fetchProjects = async (): Promise<Project[]> => {
   return projectsWithData;
 };
 
-export const createProject = async (project: Omit<Project, 'id' | 'valuations' | 'payments' | 'supplierCosts'>): Promise<Project | null> => {
+export const createProject = async (project: Omit<Project, 'id' | 'valuations' | 'payments' | 'supplierCosts' | 'createdAt'>): Promise<Project | null> => {
   const { data, error } = await supabase
     .from('projects')
     .insert({
@@ -70,6 +71,7 @@ export const createProject = async (project: Omit<Project, 'id' | 'valuations' |
     valuations: [],
     payments: [],
     supplierCosts: [],
+    createdAt: data.created_at,
   };
 };
 
@@ -393,13 +395,11 @@ export const fetchOperationalCosts = async (): Promise<OperationalCost[]> => {
   return (data || []).map((c) => ({
     id: c.id,
     category: c.category,
-    description: c.description,
+    description: c.description || '',
     amount: Number(c.amount),
     date: c.date,
-    type: c.type as 'fixed' | 'variable',
+    costType: c.type as 'fixed' | 'variable',
     isRecurring: c.is_recurring,
-    recurrencePeriod: c.recurrence_period as 'monthly' | 'quarterly' | 'yearly' | undefined,
-    notes: c.notes || '',
   }));
 };
 
@@ -411,10 +411,8 @@ export const createOperationalCost = async (cost: Omit<OperationalCost, 'id'>): 
       description: cost.description,
       amount: cost.amount,
       date: cost.date,
-      type: cost.type,
+      type: cost.costType,
       is_recurring: cost.isRecurring,
-      recurrence_period: cost.recurrencePeriod,
-      notes: cost.notes,
     })
     .select()
     .single();
@@ -427,13 +425,11 @@ export const createOperationalCost = async (cost: Omit<OperationalCost, 'id'>): 
   return {
     id: data.id,
     category: data.category,
-    description: data.description,
+    description: data.description || '',
     amount: Number(data.amount),
     date: data.date,
-    type: data.type,
+    costType: data.type as 'fixed' | 'variable',
     isRecurring: data.is_recurring,
-    recurrencePeriod: data.recurrence_period,
-    notes: data.notes || '',
   };
 };
 
@@ -445,10 +441,8 @@ export const updateOperationalCost = async (id: string, updates: Partial<Operati
       description: updates.description,
       amount: updates.amount,
       date: updates.date,
-      type: updates.type,
+      type: updates.costType,
       is_recurring: updates.isRecurring,
-      recurrence_period: updates.recurrencePeriod,
-      notes: updates.notes,
     })
     .eq('id', id);
 
@@ -505,10 +499,8 @@ export const seedOperationalCosts = async (costs: OperationalCost[]): Promise<bo
         description: c.description,
         amount: c.amount,
         date: c.date,
-        type: c.type,
+        type: c.costType,
         is_recurring: c.isRecurring,
-        recurrence_period: c.recurrencePeriod,
-        notes: c.notes,
       }))
     );
 

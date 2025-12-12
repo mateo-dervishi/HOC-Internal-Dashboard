@@ -21,7 +21,6 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const { 
     state, 
-    loading,
     updateProject,
     deleteProject: deleteProjectDb,
     addValuation,
@@ -34,7 +33,6 @@ const ProjectDetail = () => {
     updateSupplierCost,
     deleteSupplierCost,
   } = useDashboard();
-  const [saving, setSaving] = useState(false);
   
   const project = state.projects.find(p => p.id === id);
   
@@ -120,7 +118,6 @@ const ProjectDetail = () => {
   
   const handleAddValuation = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     
     const autoName = editingValuation?.name || `V${project.valuations.length + 1}`;
     const valuationData = {
@@ -138,8 +135,6 @@ const ProjectDetail = () => {
     } else {
       await addValuation(project.id, valuationData);
     }
-    
-    setSaving(false);
     setShowValuationModal(false);
     setEditingValuation(null);
     setNewValuation({
@@ -173,7 +168,6 @@ const ProjectDetail = () => {
   
   const handleAddPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     
     const paymentData = {
       date: newPayment.date,
@@ -189,8 +183,6 @@ const ProjectDetail = () => {
     } else {
       await addPayment(project.id, paymentData);
     }
-    
-    setSaving(false);
     setShowPaymentModal(false);
     setEditingPayment(null);
     setNewPayment({
@@ -218,7 +210,6 @@ const ProjectDetail = () => {
   
   const handleAddCost = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     
     const costData = {
       date: newCost.date,
@@ -232,8 +223,6 @@ const ProjectDetail = () => {
     } else {
       await addSupplierCost(project.id, costData);
     }
-    
-    setSaving(false);
     setShowCostModal(false);
     setEditingCost(null);
     setNewCost({
@@ -268,7 +257,6 @@ const ProjectDetail = () => {
   };
   
   const handleSaveEdit = async () => {
-    setSaving(true);
     await updateProject({
       ...project,
       code: editForm.code,
@@ -277,7 +265,6 @@ const ProjectDetail = () => {
       status: editForm.status as 'active' | 'completed' | 'on_hold',
       hasCashPayment: editForm.hasCashPayment,
     });
-    setSaving(false);
     setIsEditing(false);
   };
   

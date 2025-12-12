@@ -5,9 +5,8 @@ import type { OperationalCost, CostType } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const OperationalCosts = () => {
-  const { state, addOperationalCost, updateOperationalCost, deleteOperationalCost, loading } = useDashboard();
+  const { state, addOperationalCost, updateOperationalCost, deleteOperationalCost } = useDashboard();
   const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [editingCost, setEditingCost] = useState<OperationalCost | null>(null);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [selectedYear, setSelectedYear] = useState<number>(2025);
@@ -134,21 +133,20 @@ const OperationalCosts = () => {
   
   const handleAddCost = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     
     const costData = {
       date: newCost.date,
       amount: parseFloat(newCost.amount) || 0,
       category: newCost.category,
-      type: newCost.costType,
+      costType: newCost.costType,
       description: newCost.description,
       isRecurring: newCost.isRecurring,
     };
     
     if (editingCost) {
-      await updateOperationalCost({ ...costData, id: editingCost.id } as OperationalCost);
+      await updateOperationalCost({ ...costData, id: editingCost.id });
     } else {
-      await addOperationalCost(costData as Omit<OperationalCost, 'id'>);
+      await addOperationalCost(costData);
     }
     
     setSaving(false);

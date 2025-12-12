@@ -209,7 +209,7 @@ interface DashboardContextType {
   dispatch: React.Dispatch<Action>;
   loading: boolean;
   // Database actions
-  addProject: (project: Omit<Project, 'id' | 'valuations' | 'payments' | 'supplierCosts'>) => Promise<Project | null>;
+  addProject: (project: Omit<Project, 'id' | 'valuations' | 'payments' | 'supplierCosts' | 'createdAt'>) => Promise<Project | null>;
   updateProject: (project: Project) => Promise<boolean>;
   deleteProject: (id: string) => Promise<boolean>;
   addValuation: (projectId: string, valuation: Omit<Valuation, 'id'>) => Promise<Valuation | null>;
@@ -282,7 +282,7 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, [state, loading]);
 
   // Database actions
-  const addProject = async (project: Omit<Project, 'id' | 'valuations' | 'payments' | 'supplierCosts'>) => {
+  const addProject = async (project: Omit<Project, 'id' | 'valuations' | 'payments' | 'supplierCosts' | 'createdAt'>) => {
     const newProject = await db.createProject(project);
     if (newProject) {
       dispatch({ type: 'ADD_PROJECT', payload: newProject });
