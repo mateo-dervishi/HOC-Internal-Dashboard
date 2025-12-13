@@ -301,7 +301,7 @@ const NetProfit = () => {
             padding: '0.25rem',
             border: '1px solid var(--color-border)',
           }}>
-            {(['weekly', 'monthly', 'quarterly'] as TimeScale[]).map(scale => (
+            {(['monthly', 'quarterly', 'yearly'] as TimeScale[]).map(scale => (
               <button
                 key={scale}
                 onClick={() => setTimeScale(scale)}
