@@ -3,12 +3,10 @@ import {
   TrendingUp, 
   TrendingDown, 
   PoundSterling, 
-  Calendar,
   BarChart3,
   PieChart as PieChartIcon,
   ArrowUpRight,
   ArrowDownRight,
-  Minus,
   Target,
   Wallet,
   Receipt,
@@ -20,7 +18,6 @@ import { calculateProjectFinancials } from '../types';
 import { 
   AreaChart, 
   Area, 
-  BarChart, 
   Bar, 
   PieChart, 
   Pie, 
@@ -47,15 +44,6 @@ const NetProfit = () => {
       currency: 'GBP',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount);
-  };
-  
-  const formatCurrencyFull = (amount: number) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -259,9 +247,6 @@ const NetProfit = () => {
   
   const revenueChange = previousMonthData.revenue > 0 
     ? ((currentMonthData.revenue - previousMonthData.revenue) / previousMonthData.revenue) * 100 
-    : 0;
-  const profitChange = previousMonthData.netProfit !== 0 
-    ? ((currentMonthData.netProfit - previousMonthData.netProfit) / Math.abs(previousMonthData.netProfit)) * 100 
     : 0;
 
   // Get chart data based on time scale
