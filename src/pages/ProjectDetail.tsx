@@ -442,7 +442,6 @@ const ProjectDetail = () => {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Name</th>
                   <th>Date</th>
                   <th>Grand Total</th>
                   <th>Fees</th>
@@ -460,7 +459,6 @@ const ProjectDetail = () => {
                     const calc = calculateValuationTotals(valuation);
                     return (
                       <tr key={valuation.id}>
-                        <td style={{ fontWeight: 500 }}>{valuation.name}</td>
                         <td>{formatDate(valuation.date)}</td>
                         <td>{formatCurrency(calc.grandTotal)}</td>
                         <td>{calc.fees > 0 ? formatCurrency(calc.fees) : '-'}</td>
