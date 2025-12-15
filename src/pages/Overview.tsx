@@ -58,13 +58,19 @@ const Overview = () => {
     }));
   }, [state.projects]);
   
-  // All-time totals
+  // All-time totals (operational costs only up to today - actual incurred costs)
   const totals = useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    
     const totalGross = projectFinancials.reduce((sum, p) => sum + p.financials.totalGross, 0);
     const totalInflows = projectFinancials.reduce((sum, p) => sum + p.financials.totalInflows, 0);
     const totalSupplierCosts = projectFinancials.reduce((sum, p) => sum + p.financials.totalSupplierCosts, 0);
-    const fixedCosts = state.operationalCosts.filter(c => c.costType === 'fixed').reduce((sum, c) => sum + c.amount, 0);
-    const variableCosts = state.operationalCosts.filter(c => c.costType === 'variable').reduce((sum, c) => sum + c.amount, 0);
+    
+    // Only include operational costs up to today (actual outgoings, not future scheduled)
+    const costsToDate = state.operationalCosts.filter(c => new Date(c.date) <= today);
+    const fixedCosts = costsToDate.filter(c => c.costType === 'fixed').reduce((sum, c) => sum + c.amount, 0);
+    const variableCosts = costsToDate.filter(c => c.costType === 'variable').reduce((sum, c) => sum + c.amount, 0);
     const operationalCosts = fixedCosts + variableCosts;
     const grossProfit = totalInflows - totalSupplierCosts;
     const netProfit = grossProfit - operationalCosts;
@@ -85,22 +91,24 @@ const Overview = () => {
     };
   }, [projectFinancials, state.operationalCosts]);
   
-  // Current year data
+  // Current year data (only costs up to today for accurate profit tracking)
   const yearData = useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
     const yearPayments: number[] = Array(12).fill(0);
     const yearCosts: number[] = Array(12).fill(0);
     
     state.projects.forEach(p => {
       p.payments.forEach(pay => {
         const payDate = new Date(pay.date);
-        if (payDate.getFullYear() === currentYear) {
+        if (payDate.getFullYear() === currentYear && payDate <= today) {
           const vatAmount = pay.amount * (pay.vatRate || 0);
           yearPayments[payDate.getMonth()] += pay.amount + vatAmount;
         }
       });
       p.supplierCosts.forEach(c => {
         const costDate = new Date(c.date);
-        if (costDate.getFullYear() === currentYear) {
+        if (costDate.getFullYear() === currentYear && costDate <= today) {
           yearCosts[costDate.getMonth()] += c.amount;
         }
       });
@@ -108,7 +116,7 @@ const Overview = () => {
     
     state.operationalCosts.forEach(c => {
       const costDate = new Date(c.date);
-      if (costDate.getFullYear() === currentYear) {
+      if (costDate.getFullYear() === currentYear && costDate <= today) {
         yearCosts[costDate.getMonth()] += c.amount;
       }
     });

@@ -102,8 +102,14 @@ const NetProfit = () => {
     return costs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [state.projects, selectedYear]);
 
+  // Only include operational costs up to today (actual outgoings, not future scheduled)
   const yearOperationalCosts = useMemo(() => {
-    return state.operationalCosts.filter(c => new Date(c.date).getFullYear() === selectedYear);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    return state.operationalCosts.filter(c => {
+      const costDate = new Date(c.date);
+      return costDate.getFullYear() === selectedYear && costDate <= today;
+    });
   }, [state.operationalCosts, selectedYear]);
 
   // Monthly/Weekly aggregated data
