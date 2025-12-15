@@ -119,7 +119,7 @@ const ProjectDetail = () => {
   const handleAddValuation = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const autoName = editingValuation?.name || `V${project.valuations.length + 1}`;
+    const autoName = editingValuation?.name || `${project.valuations.length + 1}`;
     const valuationData = {
       name: autoName,
       date: newValuation.date,
@@ -718,12 +718,12 @@ const ProjectDetail = () => {
         </div>
       )}
       
-      {/* Add Valuation Modal */}
+      {/* Add Contract Value Modal */}
       {showValuationModal && (
         <div className="modal-overlay" onClick={() => { setShowValuationModal(false); setEditingValuation(null); }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">{editingValuation ? 'Edit Valuation' : 'Add Valuation'}</h2>
+              <h2 className="modal-title">{editingValuation ? 'Edit Contract Value' : 'Add Contract Value'}</h2>
               <button className="modal-close" onClick={() => { setShowValuationModal(false); setEditingValuation(null); }}>✕</button>
             </div>
             <form onSubmit={handleAddValuation}>
@@ -737,9 +737,6 @@ const ProjectDetail = () => {
                     onChange={(e) => setNewValuation({ ...newValuation, date: e.target.value })}
                     required
                   />
-                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                    This will be saved as V{editingValuation ? project.valuations.findIndex(v => v.id === editingValuation.id) + 1 : project.valuations.length + 1}
-                  </small>
                 </div>
                 
                 <div className="form-group">
@@ -755,25 +752,27 @@ const ProjectDetail = () => {
                     required
                   />
                   <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                    Total contract value (Fees + Subtotal)
+                    Total contract value
                   </small>
                 </div>
                 
-                <div className="form-group">
-                  <label className="form-label">Fees (£)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    placeholder="0.00"
-                    value={newValuation.fees}
-                    onChange={(e) => setNewValuation({ ...newValuation, fees: e.target.value })}
-                    min="0"
-                    step="0.01"
-                  />
-                  <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                    Non-VATable fees portion (leave empty if none)
-                  </small>
-                </div>
+                {project.hasCashPayment && (
+                  <div className="form-group">
+                    <label className="form-label">Fees (£)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      placeholder="0.00"
+                      value={newValuation.fees}
+                      onChange={(e) => setNewValuation({ ...newValuation, fees: e.target.value })}
+                      min="0"
+                      step="0.01"
+                    />
+                    <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                      Non-VATable fees portion (leave empty if none)
+                    </small>
+                  </div>
+                )}
                 
                 <div className="form-group">
                   <label className="form-label">Omissions (£)</label>
@@ -860,7 +859,7 @@ const ProjectDetail = () => {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {editingValuation ? 'Update Valuation' : 'Add Valuation'}
+                  {editingValuation ? 'Update Contract Value' : 'Add Contract Value'}
                 </button>
               </div>
             </form>
