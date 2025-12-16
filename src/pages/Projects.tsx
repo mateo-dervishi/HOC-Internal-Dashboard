@@ -56,7 +56,14 @@ const Projects = () => {
     return match ? parseInt(match[0], 10) : 0;
   };
 
-  // Filter and sort projects by code (smallest to largest)
+  // Status priority: active first, then on_hold, then completed
+  const statusOrder: Record<string, number> = {
+    'active': 0,
+    'on_hold': 1,
+    'completed': 2,
+  };
+
+  // Filter and sort projects by status, then by code (smallest to largest)
   const filteredProjects = state.projects
     .filter(project => {
       const matchesSearch = 
@@ -66,7 +73,13 @@ const Projects = () => {
       const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
       return matchesSearch && matchesStatus;
     })
-    .sort((a, b) => extractProjectNumber(a.code) - extractProjectNumber(b.code));
+    .sort((a, b) => {
+      // First sort by status
+      const statusDiff = statusOrder[a.status] - statusOrder[b.status];
+      if (statusDiff !== 0) return statusDiff;
+      // Then by project code number
+      return extractProjectNumber(a.code) - extractProjectNumber(b.code);
+    });
 
   return (
     <div>
