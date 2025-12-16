@@ -50,15 +50,23 @@ const Projects = () => {
     }).format(amount);
   };
   
-  // Filter projects
-  const filteredProjects = state.projects.filter(project => {
-    const matchesSearch = 
-      project.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (project.address?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
-    const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  // Helper to extract numeric part from project code (e.g., "IT_25015" -> 25015)
+  const extractProjectNumber = (code: string): number => {
+    const match = code.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  };
+
+  // Filter and sort projects by code (smallest to largest)
+  const filteredProjects = state.projects
+    .filter(project => {
+      const matchesSearch = 
+        project.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (project.address?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+      const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => extractProjectNumber(a.code) - extractProjectNumber(b.code));
 
   return (
     <div>
