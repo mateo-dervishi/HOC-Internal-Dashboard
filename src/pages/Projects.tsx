@@ -128,7 +128,7 @@ const Projects = () => {
         </div>
       </div>
       
-      {/* Projects Grid */}
+      {/* Projects by Status Sections */}
       {loading ? (
         <div className="card">
           <div className="empty-state">
@@ -137,67 +137,238 @@ const Projects = () => {
           </div>
         </div>
       ) : filteredProjects.length > 0 ? (
-        <div className="projects-grid">
-          {filteredProjects.map(project => {
-            const financials = calculateProjectFinancials(project);
-            const collectionRate = financials.totalGross > 0 
-              ? (financials.totalInflows / financials.totalGross) * 100 
-              : 0;
-            
-            return (
-              <Link to={`/projects/${project.id}`} key={project.id} style={{ textDecoration: 'none' }}>
-                <div className="project-card">
-                  <div className="project-card-header">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div className="project-code">{project.code}</div>
-                        <div className="project-client">{project.clientName}</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <span className={`badge badge-${project.status === 'active' ? 'success' : project.status === 'completed' ? 'neutral' : 'warning'}`}>
-                          {project.status}
-                        </span>
-                        {project.hasCashPayment && (
-                          <span className="badge badge-success">Fees</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="project-card-body">
-                    <div className="project-stat">
-                      <span className="project-stat-label">Valuations</span>
-                      <span className="project-stat-value">{project.valuations.length}</span>
-                    </div>
-                    <div className="project-stat">
-                      <span className="project-stat-label">Gross</span>
-                      <span className="project-stat-value">{formatCurrency(financials.totalGross)}</span>
-                    </div>
-                    <div className="project-stat">
-                      <span className="project-stat-label">Received</span>
-                      <span className="project-stat-value">{formatCurrency(financials.totalInflows)}</span>
-                    </div>
-                    <div className="project-stat">
-                      <span className="project-stat-label">Gross Profit</span>
-                      <span className={`project-stat-value ${financials.grossProfit >= 0 ? 'positive' : 'negative'}`}>
-                        {formatCurrency(financials.grossProfit)}
-                      </span>
-                    </div>
-                    {financials.totalGross > 0 && (
-                      <div style={{ marginTop: '1rem' }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                          Collection: {Math.round(collectionRate)}%
+        <>
+          {/* Active Projects */}
+          {filteredProjects.filter(p => p.status === 'active').length > 0 && (
+            <div style={{ marginBottom: '2rem' }}>
+              <h2 style={{ 
+                fontSize: '0.85rem', 
+                fontWeight: 500, 
+                textTransform: 'uppercase', 
+                letterSpacing: '1px',
+                color: 'var(--color-success)',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-success)' }} />
+                Active Projects ({filteredProjects.filter(p => p.status === 'active').length})
+              </h2>
+              <div className="projects-grid">
+                {filteredProjects.filter(p => p.status === 'active').map(project => {
+                  const financials = calculateProjectFinancials(project);
+                  const collectionRate = financials.totalGross > 0 
+                    ? (financials.totalInflows / financials.totalGross) * 100 
+                    : 0;
+                  return (
+                    <Link to={`/projects/${project.id}`} key={project.id} style={{ textDecoration: 'none' }}>
+                      <div className="project-card">
+                        <div className="project-card-header">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <div className="project-code">{project.code}</div>
+                              <div className="project-client">{project.clientName}</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              {project.hasCashPayment && (
+                                <span className="badge badge-success">Fees</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="progress-bar">
-                          <div className="progress-fill" style={{ width: `${Math.min(collectionRate, 100)}%` }} />
+                        <div className="project-card-body">
+                          <div className="project-stat">
+                            <span className="project-stat-label">Valuations</span>
+                            <span className="project-stat-value">{project.valuations.length}</span>
+                          </div>
+                          <div className="project-stat">
+                            <span className="project-stat-label">Gross</span>
+                            <span className="project-stat-value">{formatCurrency(financials.totalGross)}</span>
+                          </div>
+                          <div className="project-stat">
+                            <span className="project-stat-label">Received</span>
+                            <span className="project-stat-value">{formatCurrency(financials.totalInflows)}</span>
+                          </div>
+                          <div className="project-stat">
+                            <span className="project-stat-label">Gross Profit</span>
+                            <span className={`project-stat-value ${financials.grossProfit >= 0 ? 'positive' : 'negative'}`}>
+                              {formatCurrency(financials.grossProfit)}
+                            </span>
+                          </div>
+                          {financials.totalGross > 0 && (
+                            <div style={{ marginTop: '1rem' }}>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                Collection: {Math.round(collectionRate)}%
+                              </div>
+                              <div className="progress-bar">
+                                <div className="progress-fill" style={{ width: `${Math.min(collectionRate, 100)}%` }} />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* On Hold Projects */}
+          {filteredProjects.filter(p => p.status === 'on_hold').length > 0 && (
+            <div style={{ marginBottom: '2rem' }}>
+              <h2 style={{ 
+                fontSize: '0.85rem', 
+                fontWeight: 500, 
+                textTransform: 'uppercase', 
+                letterSpacing: '1px',
+                color: 'var(--color-warning)',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-warning)' }} />
+                On Hold ({filteredProjects.filter(p => p.status === 'on_hold').length})
+              </h2>
+              <div className="projects-grid">
+                {filteredProjects.filter(p => p.status === 'on_hold').map(project => {
+                  const financials = calculateProjectFinancials(project);
+                  const collectionRate = financials.totalGross > 0 
+                    ? (financials.totalInflows / financials.totalGross) * 100 
+                    : 0;
+                  return (
+                    <Link to={`/projects/${project.id}`} key={project.id} style={{ textDecoration: 'none' }}>
+                      <div className="project-card">
+                        <div className="project-card-header">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <div className="project-code">{project.code}</div>
+                              <div className="project-client">{project.clientName}</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              {project.hasCashPayment && (
+                                <span className="badge badge-success">Fees</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="project-card-body">
+                          <div className="project-stat">
+                            <span className="project-stat-label">Valuations</span>
+                            <span className="project-stat-value">{project.valuations.length}</span>
+                          </div>
+                          <div className="project-stat">
+                            <span className="project-stat-label">Gross</span>
+                            <span className="project-stat-value">{formatCurrency(financials.totalGross)}</span>
+                          </div>
+                          <div className="project-stat">
+                            <span className="project-stat-label">Received</span>
+                            <span className="project-stat-value">{formatCurrency(financials.totalInflows)}</span>
+                          </div>
+                          <div className="project-stat">
+                            <span className="project-stat-label">Gross Profit</span>
+                            <span className={`project-stat-value ${financials.grossProfit >= 0 ? 'positive' : 'negative'}`}>
+                              {formatCurrency(financials.grossProfit)}
+                            </span>
+                          </div>
+                          {financials.totalGross > 0 && (
+                            <div style={{ marginTop: '1rem' }}>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                Collection: {Math.round(collectionRate)}%
+                              </div>
+                              <div className="progress-bar">
+                                <div className="progress-fill" style={{ width: `${Math.min(collectionRate, 100)}%` }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Completed Projects */}
+          {filteredProjects.filter(p => p.status === 'completed').length > 0 && (
+            <div style={{ marginBottom: '2rem' }}>
+              <h2 style={{ 
+                fontSize: '0.85rem', 
+                fontWeight: 500, 
+                textTransform: 'uppercase', 
+                letterSpacing: '1px',
+                color: 'var(--color-text-muted)',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-text-muted)' }} />
+                Completed ({filteredProjects.filter(p => p.status === 'completed').length})
+              </h2>
+              <div className="projects-grid">
+                {filteredProjects.filter(p => p.status === 'completed').map(project => {
+                  const financials = calculateProjectFinancials(project);
+                  const collectionRate = financials.totalGross > 0 
+                    ? (financials.totalInflows / financials.totalGross) * 100 
+                    : 0;
+                  return (
+                    <Link to={`/projects/${project.id}`} key={project.id} style={{ textDecoration: 'none' }}>
+                      <div className="project-card" style={{ opacity: 0.7 }}>
+                        <div className="project-card-header">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <div className="project-code">{project.code}</div>
+                              <div className="project-client">{project.clientName}</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              {project.hasCashPayment && (
+                                <span className="badge badge-success">Fees</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="project-card-body">
+                          <div className="project-stat">
+                            <span className="project-stat-label">Valuations</span>
+                            <span className="project-stat-value">{project.valuations.length}</span>
+                          </div>
+                          <div className="project-stat">
+                            <span className="project-stat-label">Gross</span>
+                            <span className="project-stat-value">{formatCurrency(financials.totalGross)}</span>
+                          </div>
+                          <div className="project-stat">
+                            <span className="project-stat-label">Received</span>
+                            <span className="project-stat-value">{formatCurrency(financials.totalInflows)}</span>
+                          </div>
+                          <div className="project-stat">
+                            <span className="project-stat-label">Gross Profit</span>
+                            <span className={`project-stat-value ${financials.grossProfit >= 0 ? 'positive' : 'negative'}`}>
+                              {formatCurrency(financials.grossProfit)}
+                            </span>
+                          </div>
+                          {financials.totalGross > 0 && (
+                            <div style={{ marginTop: '1rem' }}>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                Collection: {Math.round(collectionRate)}%
+                              </div>
+                              <div className="progress-bar">
+                                <div className="progress-fill" style={{ width: `${Math.min(collectionRate, 100)}%` }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="card">
           <div className="empty-state">
