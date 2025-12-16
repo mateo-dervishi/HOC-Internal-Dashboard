@@ -444,7 +444,7 @@ const ProjectDetail = () => {
                 <tr>
                   <th>Date</th>
                   <th>Grand Total</th>
-                  <th>Fees</th>
+                  {project.hasCashPayment && <th>Fees</th>}
                   <th>Omissions</th>
                   <th>Subtotal</th>
                   <th>VAT</th>
@@ -461,7 +461,7 @@ const ProjectDetail = () => {
                       <tr key={valuation.id}>
                         <td>{formatDate(valuation.date)}</td>
                         <td>{formatCurrency(calc.grandTotal)}</td>
-                        <td>{calc.fees > 0 ? formatCurrency(calc.fees) : '-'}</td>
+                        {project.hasCashPayment && <td>{calc.fees > 0 ? formatCurrency(calc.fees) : '-'}</td>}
                         <td style={{ color: calc.omissions > 0 ? 'var(--color-error)' : 'inherit' }}>
                           {calc.omissions > 0 ? `-${formatCurrency(calc.omissions)}` : '-'}
                         </td>
